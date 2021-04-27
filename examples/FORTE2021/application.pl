@@ -28,31 +28,22 @@ functionOrch(
 
 functionOrch(
   orchTest1, appOp,(userDevice, [top,low,low, low]), %[userInfo, screen, geo, sensors], latency
-  seq(if([0],
-          seq(f(fNav,[_],12),(
-          seq(f(fBook,[myShop],15),
-          nil))),
-          seq(f(fBook,[myShop],15),(
-          seq(f(fNav,[_],12),
-          nil)))
-      ),
-  nil)
-).
+  if(f(fLogin,[_],5),
+          seq(f(fNav,[_],12),f(fBook,[myShop],15)),
+          seq(f(fBook,[myShop],15),f(fNav,[_],12)))
+  ).
 
 functionOrch(
   orchTest2, appOp,(userDevice, [top,low,low, low]), %[userInfo, screen, geo, sensors], latency
-  seq(f(fNav,[_],12),(
-  seq(f(fBook,[myShop],15),
-  nil)))
+  seq(f(fNav,[_],12),f(fBook,[myShop],15))
 ).
 
 functionOrch(
   orchTest3, appOp,(userDevice, [top,low,low, low]), %[userInfo, screen, geo, sensors], latency
-  seq(if([0],
+  if(f(fLogin,_,_),
           f(fNav,[_],12),
           f(fNav,[_],12)
-      ),
-  nil)
+      )
 ).
 
 % lattice of security types

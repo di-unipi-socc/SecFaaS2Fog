@@ -4,16 +4,16 @@
 :- consult('../examples/FORTE2021/infrastructure').
 :- consult('../examples/FORTE2021/application').
 
-%orchestration costructs: nil, seq, if
+%orchestration costructs: seq, if
 wellFormedOrchestration(OrchId):-
 	functionOrch(OrchId, _, (_,_), Orchestration),
 	wellFormed(Orchestration).
 
-wellFormed(nil).
 wellFormed(f(_,_,_)).
 wellFormed(seq(F1,F2)) :-
 	wellFormed(F1), wellFormed(F2).
-wellFormed(if(_, F1, F2)) :-
+wellFormed(if(Fg, F1, F2)) :-
+	wellFormed(Fg),
 	wellFormedIf(F1, F2).
 
 %aggragate is vertical, blob is horizontal
@@ -21,14 +21,13 @@ wellFormedIf(F1,F2) :-
 	wellFormed(F1), wellFormed(F2),
 	checkAggregation((noblob,empty,empty), F1, F2,(noblob,_,_)).
 
-%(Mode, TrueReqs, FalseReqs)
+%ModeReqs(Mode, TrueReqs, FalseReqs)
 %Mode == noblob, Reqs = empty
 %Mode == blob, Reqs to be aggregated
 
-%checkAggregation(InputMode[blob\noblob], TrueBranch, FalseBranch, ResultMode[blob\noblob])
-%checkAggregation -> 
-checkAggregation((noblob,_,_), nil, nil, (noblob,_,_)).
-
+%checkAggregation(Input ModeReqs, TrueBranch, FalseBranch, Result ModeReqs)
+%checkAggregation -> check the aggregation of the branches, given the input mode reqs
+%function case
 checkAggregation((noblob,_,_), f(F1,_,_), f(F2,_,_),(noblob,_,_)) :-
 	aggregable(F1, F2, _, _, yes).
 checkAggregation((noblob,_,_), f(F1,_,_), f(F2,_,_),(blob,Agg1,Agg2)) :-
@@ -36,29 +35,34 @@ checkAggregation((noblob,_,_), f(F1,_,_), f(F2,_,_),(blob,Agg1,Agg2)) :-
 checkAggregation((blob,OldAgg1,OldAgg2), f(F1,_,_), f(F2,_,_),(Mode, SumAgg1, SumAgg2)) :-
 	aggregable(F1, F2, Agg1, Agg2, _),
 	checkBlob(OldAgg1, OldAgg2, Agg1, Agg2, SumAgg1, SumAgg2, Mode).
-
+%seq case
 checkAggregation(OldMode, seq(F1,L1), seq(F2,L2), ResMode) :-
 	checkAggregation(OldMode, F1, F2, Mode),
 	checkAggregation(Mode, L1, L2, ResMode).
 
 %checkBlob -> sum reqs and check if the blob is ended
-checkBlob(OldAgg1, OldAgg2, Agg1, Agg2, SumAgg1, SumAgg1, noblob):-
-	sumReqs(OldAgg1, Agg1, SumAgg1),
-	sumReqs(OldAgg2, Agg2, SumAgg1).
-
-checkBlob(OldAgg1, OldAgg2, Agg1, Agg2, SumAgg1, SumAgg2, blob):-
+checkBlob(OldAgg1, OldAgg2, Agg1, Agg2, SumAgg1, SumAgg1, Mode):-
 	sumReqs(OldAgg1, Agg1, SumAgg1),
 	sumReqs(OldAgg2, Agg2, SumAgg2),
-	SumAgg1\==SumAgg2.
+	blobMode(SumAgg1, SumAgg2, Mode).
+
+%blobMode -> check summed reqs and give noblob\blob (finshed blob or to be continued)
+blobMode(SumAgg1, SumAgg2, blob):-
+	difReqs(SumAgg1,SumAgg2).
+
+blobMode(SumAgg1, SumAgg2, noblob):-
+	\+ difReqs(SumAgg1,SumAgg2).
 
 %sumReqs -> union of SW and Ser reqs, max of HW reqs
 sumReqs((OldSW, (OldMem, OldCore,OldCPU), OldSER), (SW,(Mem,Core,CPU),SER), (NewSW,(NewMem, NewCore,NewCPU),NewSER)):-
-	ord_union(OldSW, SW, NewSW),
+	union(OldSW, SW, NewSW),
 	NewMem is max(OldMem, Mem),
 	NewCore is max(OldCore, Core),
 	NewCPU is max(OldCPU, CPU),
-	ord_union(OldSER, SER, NewSER).
-	
+	union(OldSER, SER, NewSER).
+
+%aggragable(functionId1, functionId2, Reqs1, Reqs2, yes\no)
+%aggragable -> check if the two functions are aggragable and return their requirements
 aggregable(F1, F2, (Sw, Hw, Ser),(Sw, Hw, Ser),yes):-
 	functionReqs(F1, Sw, Hw, Ser),
 	functionReqs(F2, Sw, Hw, Ser).
@@ -67,9 +71,12 @@ aggregable(F1, F2, (Sw1, Hw1, Ser1),(Sw2, Hw2, Ser2),no):-
 	functionReqs(F1, Sw1, Hw1, Ser1),
 	functionReqs(F2, Sw2, Hw2, Ser2),
 	(dif(F1,F2); set_dif(Sw1,Sw2); dif(Hw1, Hw2); set_dif(Ser1,Ser2)).
-	%TODO max
-	%Hw is max(Hw1, Hw2), union(Sw1, Sw2, Sw), union(Ser1, Ser2, Ser).
 
+%difReqs -> given two sets of reqs check if they are different
+difReqs((Sw1, Hw1, Ser1),(Sw2, Hw2, Ser2)):-
+	set_dif(Sw1,Sw2); dif(Hw1, Hw2); set_dif(Ser1,Ser2).
+
+%set_dif -> check the difference of two sets implemented by lists
 set_dif(A,B) :- member(X,A), \+ member(X,B).
 set_dif(A,B) :- member(X,B), \+ member(X,A).
 %TODO sequenze lunghe diverse
