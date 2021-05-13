@@ -8,7 +8,6 @@
 :- consult('../examples/FORTE2021/infrastructure').
 :- consult('../examples/FORTE2021/application').
 
-
 faas2fogNew(OrchId, Placement):-
 	functionOrch(OrchId, AppOp, (GeneratorId,TriggerTypes), Orchestration),
 	eventGenerator(GeneratorId, GeneratorNode), 

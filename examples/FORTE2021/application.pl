@@ -3,7 +3,7 @@
 
 % functionReqs(functionId, listOfSWReqs, HWReqs(memory, vCPU, Htz), timeout, listOfServiceReqs(serviceType, latency))
 functionReqs(fLogin, [py3], (1024, 2, 500), [(userDB, 13)]).
-functionReqs(fShop, [py3, numPy], (2048, 4, 1500), []).
+functionReqs(fShop, [py3, numPy], (2048, 4, 1200), []).
 functionReqs(fGeo, [js], (1024, 2, 400), [(maps, 30)]).
 functionReqs(fGather, [js], (1024, 2, 500), [(shops, 12)]).
 functionReqs(fNav, [js], (1024, 2, 500), [(maps, 300)]).
@@ -11,7 +11,7 @@ functionReqs(fNav2, [js], (1024, 2, 500), [(maps, 300)]).
 functionReqs(fBook, [js], (1024, 2, 500), [(shops, 120)]).
 functionReqs(fBook2, [js], (1024, 2, 500), [(shops, 120)]).
 functionReqs(fAR, [py3, numPy], (2048, 4, 1200), []).
-functionReqs(fAR2, [py3, numPy], (2048, 4, 1500), []).
+functionReqs(fAR2, [py3, numPy], (2048, 4, 1200), []).
 functionReqs(fSynch, [], (0, 0, 0), []).
 
 %functionBehaviour(functionId, listOfInputs, listOf(serviceReq, TypeParam), listOfOutputs)
@@ -39,10 +39,18 @@ functionOrch(
 functionOrch(
   orchTest1, appOp,(userDevice, [top,medium,low, low]), %[userInfo, screen, geo, sensors], latency
   if(f(fLogin,[],50),
-          seq(f(fNav,[],120),seq(f(fBook2,[myShop],150),f(fAR,[],100))),
-          seq(f(fBook,[myShop],150),seq(f(fNav2,[],120),f(fAR,[],100)))
-    )
-  ).
+        seq(f(fNav,[],120),seq(f(fBook2,[myShop],150),f(fAR,[],100))),
+        seq(f(fBook,[myShop],150),seq(f(fNav2,[],100),f(fAR,[],80)))
+  )
+).
+
+functionOrch(
+  orchTest10, appOp,(userDevice, [top,medium,low, low]), %[userInfo, screen, geo, sensors], latency
+  if(f(fLogin,[],50),
+        seq(f(fNav,[],120),f(fBook,[],100)),
+        seq(f(fNav2,[],120),f(fBook2,[],100))
+  )
+).
 
 functionOrch(
   orchTest2, appOp,(userDevice, [medium,low]), %[userInfo, screen, geo, sensors], latency
@@ -52,7 +60,7 @@ functionOrch(
 functionOrch(
   orchTest3, appOp,(userDevice, [top,medium,low, low]), %[userInfo, screen, geo, sensors], latency
   if(f(fLogin,[myUsers],60),
-          seq(f(fShop,[],120),f(fShop,[],120)),
+          seq(f(fShop,[],120),f(fShop,[],100)),
           f(fAR2,[],30)
       )
 ).
