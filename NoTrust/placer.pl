@@ -12,9 +12,9 @@ faas2fogNew(OrchId, Placement):-
 	functionOrch(OrchId, AppOp, (GeneratorId,TriggerTypes), Orchestration),
 	eventGenerator(GeneratorId, GeneratorNode), 
 	lowestType(Lowest),
-	typePropagation(Lowest,TriggerTypes,Orchestration,TypedOrchestration,_),
-	wellFormed(TypedOrchestration, BlobbedOrchestration),
-	mapping(AppOp, BlobbedOrchestration, GeneratorNode, Placement).
+	typePropagation(Lowest,TriggerTypes,Orchestration,TypedOrchestration,_), 	%f  -> ft
+	wellFormed(TypedOrchestration, BlobbedOrchestration),						%if -> seq, add blobs
+	mapping(AppOp, BlobbedOrchestration, GeneratorNode, Placement).				%ft -> fp
 
 notDuplicate(OrchId):-
 	findall(P,faas2fogNew(OrchId, P), Ps),

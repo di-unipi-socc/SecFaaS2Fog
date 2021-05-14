@@ -17,7 +17,10 @@ mapping(AppOp, ft(F, FType,FServices,RequiredLatency), PreviousNodes, [N], OldAl
 mapping(AppOp, seq(S1,S2), PreviousNodes, LastNodesS2, OldAllocHW, AllocHWS2, seq(P1,P2)):-
 	mapping(AppOp,S1,PreviousNodes, LastNodesS1,OldAllocHW, AllocHWS1, P1),
 	mapping(AppOp,S2,LastNodesS1, LastNodesS2,AllocHWS1, AllocHWS2, P2).
-
+%seqif case
+mapping(AppOp, seqIf(S1,S2), PreviousNodes, LastNodesS2, OldAllocHW, AllocHWS2, seqIf(P1,P2)):-
+	mapping(AppOp,S1,PreviousNodes, LastNodesS1,OldAllocHW, AllocHWS1, P1),
+	mapping(AppOp,S2,LastNodesS1, LastNodesS2,AllocHWS1, AllocHWS2, P2).
 %blob case
 mapping(AppOp, blob(FList,FType,RequiredLatency, (SWReqs, HWReqs, _)), PreviousNodes, [N], OldAllocHW, NewAllocHW, blob(PlacedFunctions,FType)):-
 	getNode(AppOp, N, SWCaps, HWCaps),

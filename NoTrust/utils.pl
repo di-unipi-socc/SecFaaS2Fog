@@ -47,3 +47,8 @@ hwReqsOK(HWReqs, HWCaps, N, [(N1,AllocHW)|L], [(N1,AllocHW)|NewL]) :-
 %set_dif -> check the difference of two sets implemented by lists
 set_dif(A,B) :- member(X,A), \+ member(X,B).
 set_dif(A,B) :- member(X,B), \+ member(X,A).
+
+%union_sort, append of list and sorting
+union_sort(L1,L2,Lres):-
+	append(L1,L2,Ltemp),
+	sort(Ltemp, Lres).
