@@ -1,6 +1,6 @@
 typePropagation(_,InputTypes,[], [],InputTypes).
 %f case
-typePropagation(GuardType,InTypes, f(F,FServices,Latency), ft(F,FServices,FType,Latency), OutTypes) :-
+typePropagation(GuardType,InTypes, f(F,FServices,Latency), ft(F,FType,FServices,Latency), OutTypes) :-
     functionBehaviour(F, InTypes, InteractionsTypes, OutTypes),
 	%union(InTypes,GuardType, InputTypes),
     union([GuardType|InTypes], InteractionsTypes, TempTypes), union(TempTypes, OutTypes, AllTypes),

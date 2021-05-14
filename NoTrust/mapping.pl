@@ -3,7 +3,7 @@ mapping(AppOp, TypedBlobbedOrchestration, GeneratorNode, Placement) :-
 
 %mapping(_, [], [], _, AllocHW, AllocHW, []).
 %ft case
-mapping(AppOp, ft(F, FServices,FType,RequiredLatency), PreviousNodes, [N], OldAllocHW, NewAllocHW, [on(F,N,FServicesBinding)]):-
+mapping(AppOp, ft(F, FType,FServices,RequiredLatency), PreviousNodes, [N], OldAllocHW, NewAllocHW, fp(F, FType,FServicesBinding,N)):-
 	getNode(AppOp, N, SWCaps, HWCaps),
 	checkPreviousNodesLat(PreviousNodes, N, RequiredLatency),
 	%link(PreviousNode, N, FeaturedLatency), FeaturedLatency =< RequiredLatency,
@@ -14,13 +14,12 @@ mapping(AppOp, ft(F, FServices,FType,RequiredLatency), PreviousNodes, [N], OldAl
     bindServices(AppOp, N, FServices, FType, FServicesReqs, FServicesBinding).
 
 %seq case
-mapping(AppOp, seq(S1,S2), PreviousNodes, LastNodesS2, OldAllocHW, AllocHWS2, Placement):-
+mapping(AppOp, seq(S1,S2), PreviousNodes, LastNodesS2, OldAllocHW, AllocHWS2, seq(P1,P2)):-
 	mapping(AppOp,S1,PreviousNodes, LastNodesS1,OldAllocHW, AllocHWS1, P1),
-	mapping(AppOp,S2,LastNodesS1, LastNodesS2,AllocHWS1, AllocHWS2, P2),
-	append(P1,P2,Placement).
+	mapping(AppOp,S2,LastNodesS1, LastNodesS2,AllocHWS1, AllocHWS2, P2).
 
 %blob case
-mapping(AppOp, blob(FList,FType,RequiredLatency, (SWReqs, HWReqs, _)), PreviousNodes, [N], OldAllocHW, NewAllocHW, PlacedFunctions):-
+mapping(AppOp, blob(FList,FType,RequiredLatency, (SWReqs, HWReqs, _)), PreviousNodes, [N], OldAllocHW, NewAllocHW, blob(PlacedFunctions,FType)):-
 	getNode(AppOp, N, SWCaps, HWCaps),
 	checkPreviousNodesLat(PreviousNodes, N, RequiredLatency),
 	swReqsOK(SWReqs, SWCaps),
@@ -29,11 +28,13 @@ mapping(AppOp, blob(FList,FType,RequiredLatency, (SWReqs, HWReqs, _)), PreviousN
 	bindServicesBlob(AppOp, FList, N, FType, PlacedFunctions).
 
 %par case
-mapping(_, par([]), _, [], AllocHW, AllocHW, []).
-mapping(AppOp, par([F|FList]), PreviousNodes, NewLastNodesPar, OldAllocHW, NewAllocHW, Placement):-
-	mapping(AppOp,F,PreviousNodes, LastNodesF,OldAllocHW, AllocHW, PF),
-	mapping(AppOp,par(FList),PreviousNodes, LastNodesPar,AllocHW, NewAllocHW, PFList),
-	append(PF,PFList,Placement),
+mapping(AppOp, par(Par), PreviousNodes, NewLastNodesPar, OldAllocHW, NewAllocHW, par(Placement)):-
+	mappingPar(AppOp,Par, PreviousNodes, NewLastNodesPar, OldAllocHW, NewAllocHW, Placement).
+
+mappingPar(_, [], _, [], AllocHW, AllocHW, []).
+mappingPar(AppOp, [F|FList], PreviousNodes, NewLastNodesPar, OldAllocHW, NewAllocHW, [Pf|PFList]):-
+	mapping(AppOp,F,PreviousNodes, LastNodesF,OldAllocHW, AllocHW, Pf),
+	mappingPar(AppOp,FList,PreviousNodes, LastNodesPar,AllocHW, NewAllocHW, PFList),
 	append(LastNodesF, LastNodesPar, NewLastNodesPar).
 
 getNode(_, N, SWCaps, HWCaps) :-
@@ -69,7 +70,7 @@ getService(_, S2, ServiceType, ServiceNode, InstanceBindings) :-
 	service(S2, _, ServiceType, ServiceNode).
 
 bindServicesBlob(_,[],_,_,[]).
-bindServicesBlob(AppOp,[(F,Bindings)|FList], N, FType, [on(F,N,FServicesBinding)|PlacedFunctions]):-
+bindServicesBlob(AppOp,[(F,Bindings)|FList], N, FType, [(F,FServicesBinding,N)|PlacedFunctions]):-
 	functionReqs(F, _, _, FServicesReqs),
     bindServices(AppOp, N, Bindings, FType, FServicesReqs, FServicesBinding),
 	bindServicesBlob(AppOp,FList, N, FType, PlacedFunctions).
