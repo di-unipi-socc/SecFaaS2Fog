@@ -1,8 +1,10 @@
 :- use_module(library(lists)).
 %:- consult('infrastructure').
 %:- consult('application').
+:- consult('wellformedness').
 :- consult('typing').
-:- consult('wellFormedness').
+:- consult('blobify').
+:- consult('padding').
 :- consult('mapping').
 :- consult('utils').
 :- consult('../examples/FORTE2021/infrastructure').
@@ -10,11 +12,10 @@
 
 faas2fogNew(OrchId, Placement):-
 	functionOrch(OrchId, AppOp, (GeneratorId,TriggerTypes), Orchestration),
-	eventGenerator(GeneratorId, GeneratorNode), 
-	lowestType(Lowest),
-	typePropagation(Lowest,TriggerTypes,Orchestration,TypedOrchestration,_), 	%f  -> ft
-	wellFormed(TypedOrchestration, BlobbedOrchestration),						%if -> seq, add blobs
-	mapping(AppOp, BlobbedOrchestration, GeneratorNode, Placement).				%ft -> fp
+	wellFormed(Orchestration,WFOrchestration),
+	typePropagation(TriggerTypes,WFOrchestration,TypedOrchestration),	%f  -> ft
+	blobify(TypedOrchestration, BlobbedOrchestration),					%if -> seq, add blobs
+	mapping(AppOp, BlobbedOrchestration, GeneratorId, Placement).		%ft -> fp
 
 notDuplicate(OrchId):-
 	findall(P,faas2fogNew(OrchId, P), Ps),
@@ -25,11 +26,11 @@ notDuplicate(OrchId):-
 
 testTyping(OrchId, TypedOrchestration):-
 	functionOrch(OrchId, _, (_,TriggerTypes), Orchestration),
-	lowestType(Lowest),
-	typePropagation(Lowest,TriggerTypes,Orchestration,TypedOrchestration,_).
+	wellFormed(Orchestration,WFOrchestration),
+	typePropagation(TriggerTypes,WFOrchestration,TypedOrchestration).
 
 testTypingBlob(OrchId, BlobedOrchestration):-
 	functionOrch(OrchId, _, (_,TriggerTypes), Orchestration),
-	lowestType(Lowest),
-	typePropagation(Lowest,TriggerTypes,Orchestration,TypedOrchestration,_),
-	wellFormed(TypedOrchestration, BlobedOrchestration).
+	wellFormed(Orchestration,WFOrchestration),
+	typePropagation(TriggerTypes,WFOrchestration,TypedOrchestration),
+	blobify(TypedOrchestration, BlobedOrchestration).

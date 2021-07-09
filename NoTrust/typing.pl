@@ -1,6 +1,11 @@
+%security type assignment to function of an orchestration
+typePropagation(TriggerTypes,WfOrchestration,TypedOrchestration):-
+	lowestType(Lowest),
+	typePropagation(Lowest,TriggerTypes,WfOrchestration,TypedOrchestration,_).
+
 typePropagation(_,InputTypes,[], [],InputTypes).
 %f case
-typePropagation(GuardType,InTypes, f(F,FServices,Latency), ft(F,FType,FServices,Latency), OutTypes) :-
+typePropagation(GuardType,InTypes, fun(F,FServices,Latency), ft(F,FType,FServices,Latency), OutTypes) :-
     functionBehaviour(F, InTypes, InteractionsTypes, OutTypes),
 	%union(InTypes,GuardType, InputTypes),
     union([GuardType|InTypes], InteractionsTypes, TempTypes), union(TempTypes, OutTypes, AllTypes),

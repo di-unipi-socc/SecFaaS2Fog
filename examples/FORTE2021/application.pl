@@ -8,13 +8,15 @@ functionReqs(fGeo, [js], (1024, 2, 400), [(maps, 30)]).
 functionReqs(fGather, [js], (1024, 2, 500), [(shops, 12)]).
 functionReqs(fNav, [js], (1024, 2, 500), [(maps, 300)]).
 functionReqs(fNav2, [js], (1024, 2, 500), [(maps, 300)]).
+functionReqs(fNav3, [js], (1024, 2, 500), [(maps, 300)]).
 functionReqs(fBook, [js], (1024, 2, 500), [(shops, 120)]).
 functionReqs(fBook2, [js], (1024, 2, 500), [(shops, 120)]).
 functionReqs(fAR, [py3, numPy], (2048, 4, 1200), []).
 functionReqs(fAR2, [py3, numPy], (2048, 4, 1200), []).
+functionReqs(fAR3, [py3, numPy], (2048, 4, 1200), []).
 functionReqs(fSynch, [], (0, 0, 0), []).
 
-%functionBehaviour(functionId, listOfInputs, listOf(serviceReq, TypeParam), listOfOutputs)
+%functionBehaviour(functionId, listOfInputs, listOfun(serviceReq, TypeParam), listOfOutputs)
 functionBehaviour(fLogin, [U, Sc, G, Se],[U], [Sc, G, Se]).
 functionBehaviour(fLogin, [U, Sc, G, _],[U], [Sc, G]).
 functionBehaviour(fShop,[Sc, G, Se],[], [Sc, low, G, Se]).
@@ -23,11 +25,13 @@ functionBehaviour(fGeo, [Sc, Sb, G, Se], [Sb, G, Se, low], [Sc, Sb, low]).
 functionBehaviour(fGather, [Sc, Sb, Sh], [Sh, medium], [Sc, Info]):- maxType(Sb, Sh,Info).
 functionBehaviour(fNav, [Sc, Sh], [Nav], [Sc, Nav]):- maxType(Sc, Sh, Nav).
 functionBehaviour(fNav2, [Sc, Sh], [Nav], [Sc, Nav]):- maxType(Sc, Sh, Nav).
+functionBehaviour(fNav3, [Sc, Sh,_], [Nav], [Sc, Nav]):- maxType(Sc, Sh, Nav).
 functionBehaviour(fBook, [Sc, Sh], [Book], [Sc, Book]):- maxType(Sc, Sh, Book).
 functionBehaviour(fBook2, [Sc, Sh], [Book], [Sc, Book]):- maxType(low, Sh, Book).
 functionBehaviour(fAR, [Sc,Draw], [], [ScAr]):- maxType(Sc, Draw, ScAr).
 functionBehaviour(fAR2, [Sc,Draw,_], [], [ScAr,low,low]):- maxType(Sc, Draw, ScAr).
-functionBehaviour(fSynch, [_,_,_,_,_,_,_], [], [low]).
+functionBehaviour(fAR3, [Sc,Draw], [], [ScAr,low]):- maxType(Sc, Draw, ScAr).
+functionBehaviour(fSynch, [_,_,_,_,_,_,_], [], [low,low]).
 
 %functionOrch(functionOrchId, operatorId, triggeringEvent(eventSource, eventType, inputParameters), (latency from source, dest)
 %               listOfFunctions(functionId(listOfServiceInstances), latencyFromPrevious)
@@ -38,47 +42,72 @@ functionOrch(
 
 functionOrch(
   orchTest1, appOp,(userDevice, [top,medium,low, low]), %[userInfo, screen, geo, sensors], latency
-  if(f(fLogin,[],250),
-        seq(f(fNav,[],120),seq(f(fBook2,[myShop],150),f(fAR,[],100))),
-        seq(f(fBook,[myShop],150),seq(f(fNav2,[],100),f(fAR,[],180)))
+  if(fun(fLogin,[],250),
+        seq(fun(fNav,[],120),seq(fun(fBook2,[myShop],150),fun(fAR,[],100))),
+        seq(fun(fBook,[myShop],150),seq(fun(fNav2,[],100),fun(fAR,[],180)))
   )
 ).
 
 functionOrch(
   orchTest10, appOp,(userDevice, [top,medium,low, low]), %[userInfo, screen, geo, sensors], latency
-  if(f(fLogin,[],50),
-        seq(f(fNav,[],120),f(fBook,[],100)),
-        seq(f(fNav2,[],120),f(fBook2,[],100))
+  if(fun(fLogin,[],50),
+        seq(fun(fNav,[],120),fun(fBook,[],100)),
+        seq(fun(fNav2,[],120),fun(fBook2,[],100))
   )
 ).
 
 functionOrch(
   orchTest2, appOp,(userDevice, [medium,low]), %[userInfo, screen, geo, sensors], latency
-  seq(f(fNav,[],120),seq(f(fBook2,[myShop],150),f(fAR,[],100)))
+  seq(fun(fNav,[],120),seq(fun(fBook2,[myShop],150),fun(fAR,[],100)))
 ).
 
 functionOrch(
   orchTest3, appOp,(userDevice, [top,medium,low, low]), %[userInfo, screen, geo, sensors], latency
-  if(f(fLogin,[myUsers],60),
-          seq(f(fShop,[],120),f(fShop,[],100)),
-          f(fAR2,[],30)
+  if(fun(fLogin,[myUsers],60),
+          seq(fun(fShop,[],120),fun(fShop,[],100)),
+          fun(fAR2,[],30)
       )
 ).
 
 functionOrch(
   orchTest4, appOp,(userDevice, [top,medium,low, low]), %[userInfo, screen, geo, sensors], latency
-  seq(f(fLogin,[myUsers],60),
-      seq(par([seq(f(fShop,[],100),f(fShop,[],120)), f(fAR2,[],120)]), 
-      f(fSynch,[],150)))
+  seq(fun(fLogin,[myUsers],60),
+      seq(par([seq(fun(fShop,[],100),fun(fShop,[],120)), fun(fAR2,[],120)]), 
+      fun(fSynch,[],150)))
 ).
 
 functionOrch(
   orchTest5, appOp,(userDevice, [top,medium,low, low]), %[userInfo, screen, geo, sensors], latency
-  if(f(fLogin,[myUsers],60),
-        seq(f(fNav,[],120),seq(f(fBook2,[myShop],150),f(fAR,[],100))),
-        seq(seq(f(fNav,[],120),f(fBook2,[myShop],150)),f(fAR,[],100))
+  if(fun(fLogin,[myUsers],60),
+        seq(fun(fNav,[],120),seq(fun(fBook2,[myShop],150),fun(fAR,[],100))),
+        seq(seq(fun(fNav,[],120),fun(fBook2,[myShop],150)),fun(fAR,[],100))
       )
 ).
+
+functionOrch(
+  orchTest6, appOp,(userDevice, [top,medium,low, low]), %[userInfo, screen, geo, sensors], latency
+  if(fun(fLogin,[myUsers],60),
+        if(fun(fNav3,[],120),fun(fBook2,[myShop],150),seq(fun(fAR3,[],100),fun(fAR3,[],100))),
+        seq(seq(fun(fNav3,[],120),fun(fBook2,[myShop],150)),fun(fAR3,[],100))
+      )
+).
+
+functionOrch(
+  orchTest7, appOp,(userDevice, [top,medium,low, low]), %[userInfo, screen, geo, sensors], latency
+  if(fun(fLogin,[myUsers],60),
+        seq(if(fun(fNav3,[],120),fun(fBook2,[myShop],150),seq(fun(fAR3,[],100),fun(fAR3,[],100))),fun(fAR3,[],100)),
+        seq(seq(fun(fNav3,[],120),fun(fBook2,[myShop],150)),fun(fAR3,[],100))
+      )
+).
+
+functionOrch(
+  orchTest8, appOp,(userDevice, [top,medium,low, low]), %[userInfo, screen, geo, sensors], latency
+  if(fun(fLogin,[myUsers],60),
+        seq(par([seq(fun(fNav3, [], 100), fun(fAR3, [], 100)), fun(fGather, [], 100),fun(fAR2, [], 100)]),fun(fSynch,[],150)),
+        seq(seq(fun(fNav3,[],120),fun(fBook2,[myShop],150)),fun(fAR3,[],100))
+      )
+).
+
 
 % lattice of security types
 g_lattice_higherThan(top, medium).

@@ -45,10 +45,14 @@ hwReqsOK(HWReqs, HWCaps, N, [(N1,AllocHW)|L], [(N1,AllocHW)|NewL]) :-
 	hwReqsOK(HWReqs, HWCaps, N, L, NewL).
 
 %set_dif -> check the difference of two sets implemented by lists
-set_dif(A,B) :- member(X,A), \+ member(X,B).
-set_dif(A,B) :- member(X,B), \+ member(X,A).
+set_dif(A,B) :- once(check_set_dif(A,B)).
+check_set_dif(A,B) :- (member(X,A), \+ member(X,B)); (member(Y,B), \+ member(Y,A)).
 
 %union_sort, append of list and sorting
 union_sort(L1,L2,Lres):-
 	append(L1,L2,Ltemp),
 	sort(Ltemp, Lres).
+union_sort(L1,L2,L3,Lres):-
+	append(L1,L2,Ltemp),
+	append(L3,Ltemp,Ltemp2),
+	sort(Ltemp2, Lres).

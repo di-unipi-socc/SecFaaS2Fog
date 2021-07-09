@@ -1,4 +1,6 @@
-mapping(AppOp, TypedBlobbedOrchestration, GeneratorNode, Placement) :-
+%find suitable placements, assigning nodes to functions resolving the costraints
+mapping(AppOp, TypedBlobbedOrchestration, GeneratorId, Placement) :-
+	eventGenerator(GeneratorId, GeneratorNode),
 	mapping(AppOp, TypedBlobbedOrchestration, [GeneratorNode], _,[], _, Placement).
 
 %mapping(_, [], [], _, AllocHW, AllocHW, []).
@@ -12,7 +14,15 @@ mapping(AppOp, ft(F, FType,FServices,RequiredLatency), PreviousNodes, [N], OldAl
     hwReqsOK(HWReqs, HWCaps, N, OldAllocHW, NewAllocHW),
     compatibleNodeType(FType,N),
     bindServices(AppOp, N, FServices, FType, FServicesReqs, FServicesBinding).
-
+%fpad case
+mapping(AppOp, fpad(F,FType,FServices,RequiredLatency,SWReqs,HWReqs,FServicesReqs), PreviousNodes, [N], OldAllocHW, NewAllocHW, fp(F, FType,FServicesBinding,N)):-
+	getNode(AppOp, N, SWCaps, HWCaps),
+	checkPreviousNodesLat(PreviousNodes, N, RequiredLatency),
+	%link(PreviousNode, N, FeaturedLatency), FeaturedLatency =< RequiredLatency,
+    swReqsOK(SWReqs, SWCaps),
+    hwReqsOK(HWReqs, HWCaps, N, OldAllocHW, NewAllocHW),
+    compatibleNodeType(FType,N),
+    bindServices(AppOp, N, FServices, FType, FServicesReqs, FServicesBinding).
 %seq case
 mapping(AppOp, seq(S1,S2), PreviousNodes, LastNodesS2, OldAllocHW, AllocHWS2, seq(P1,P2)):-
 	mapping(AppOp,S1,PreviousNodes, LastNodesS1,OldAllocHW, AllocHWS1, P1),
@@ -21,6 +31,12 @@ mapping(AppOp, seq(S1,S2), PreviousNodes, LastNodesS2, OldAllocHW, AllocHWS2, se
 mapping(AppOp, seqIf(S1,S2), PreviousNodes, LastNodesS2, OldAllocHW, AllocHWS2, seqIf(P1,P2)):-
 	mapping(AppOp,S1,PreviousNodes, LastNodesS1,OldAllocHW, AllocHWS1, P1),
 	mapping(AppOp,S2,LastNodesS1, LastNodesS2,AllocHWS1, AllocHWS2, P2).
+%if case
+mapping(AppOp, if(G,L,R), PreviousNodes, LastNodesIF, OldAllocHW, AllocHWR, if(PG,PL,PR)):-
+	mapping(AppOp,G,PreviousNodes, LastNodesG,OldAllocHW, AllocHWG, PG),
+	mapping(AppOp,L,LastNodesG, LastNodesL,AllocHWG, AllocHWL, PL),
+	mapping(AppOp,R,LastNodesG, LastNodesR,AllocHWL, AllocHWR, PR),
+	append(LastNodesL, LastNodesR, LastNodesIF).
 %blob case
 mapping(AppOp, blob(FList,FType,RequiredLatency, (SWReqs, HWReqs, _)), PreviousNodes, [N], OldAllocHW, NewAllocHW, blob(PlacedFunctions,FType)):-
 	getNode(AppOp, N, SWCaps, HWCaps),
