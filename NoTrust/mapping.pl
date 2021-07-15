@@ -1,59 +1,59 @@
 %find suitable placements, assigning nodes to functions resolving the costraints
 mapping(AppOp, TypedBlobbedOrchestration, GeneratorId, Placement) :-
 	eventGenerator(GeneratorId, GeneratorNode),
-	mapping(AppOp, TypedBlobbedOrchestration, [GeneratorNode], _,[], _, Placement).
+	mapping(AppOp, TypedBlobbedOrchestration, [GeneratorNode], _,[], _, Placement).%[] is starting empty placement
 
-%mapping(_, [], [], _, AllocHW, AllocHW, []).
+%mapping(_, [], [], _, Placement, Placement, []).
 %ft case
-mapping(AppOp, ft(F, FType,FServices,RequiredLatency), PreviousNodes, [N], OldAllocHW, NewAllocHW, fp(F, FType,FServicesBinding,N)):-
+mapping(AppOp, ft(F, FType,FServices,RequiredLatency), PreviousNodes, [N], OldPlacement, [on(F,N,HWReqs)|OldPlacement], fp(F, FType,FServicesBinding,N)):-
 	getNode(AppOp, N, SWCaps, HWCaps),
 	checkPreviousNodesLat(PreviousNodes, N, RequiredLatency),
 	%link(PreviousNode, N, FeaturedLatency), FeaturedLatency =< RequiredLatency,
 	functionReqs(F, SWReqs, HWReqs, FServicesReqs),
     swReqsOK(SWReqs, SWCaps),
-    hwReqsOK(HWReqs, HWCaps, N, OldAllocHW, NewAllocHW),
+    hwReqsOK(HWReqs, HWCaps, N, OldPlacement),
     compatibleNodeType(FType,N),
     bindServices(AppOp, N, FServices, FType, FServicesReqs, FServicesBinding).
 %fpad case
-mapping(AppOp, fpad(F,FType,FServices,RequiredLatency,SWReqs,HWReqs,FServicesReqs), PreviousNodes, [N], OldAllocHW, NewAllocHW, fp(F, FType,FServicesBinding,N)):-
+mapping(AppOp, fpad(F,FType,FServices,RequiredLatency,SWReqs,HWReqs,FServicesReqs), PreviousNodes, [N], OldPlacement,[on(F,N,HWReqs)|OldPlacement], fp(F, FType,FServicesBinding,N)):-
 	getNode(AppOp, N, SWCaps, HWCaps),
 	checkPreviousNodesLat(PreviousNodes, N, RequiredLatency),
 	%link(PreviousNode, N, FeaturedLatency), FeaturedLatency =< RequiredLatency,
     swReqsOK(SWReqs, SWCaps),
-    hwReqsOK(HWReqs, HWCaps, N, OldAllocHW, NewAllocHW),
+    hwReqsOK(HWReqs, HWCaps, N, OldPlacement),
     compatibleNodeType(FType,N),
     bindServices(AppOp, N, FServices, FType, FServicesReqs, FServicesBinding).
 %seq case
-mapping(AppOp, seq(S1,S2), PreviousNodes, LastNodesS2, OldAllocHW, AllocHWS2, seq(P1,P2)):-
-	mapping(AppOp,S1,PreviousNodes, LastNodesS1,OldAllocHW, AllocHWS1, P1),
-	mapping(AppOp,S2,LastNodesS1, LastNodesS2,AllocHWS1, AllocHWS2, P2).
+mapping(AppOp, seq(S1,S2), PreviousNodes, LastNodesS2, OldPlacement, PlacementS2, seq(P1,P2)):-
+	mapping(AppOp,S1,PreviousNodes, LastNodesS1,OldPlacement, PlacementS1, P1),
+	mapping(AppOp,S2,LastNodesS1, LastNodesS2,PlacementS1, PlacementS2, P2).
 %seqif case
-mapping(AppOp, seqIf(S1,S2), PreviousNodes, LastNodesS2, OldAllocHW, AllocHWS2, seqIf(P1,P2)):-
-	mapping(AppOp,S1,PreviousNodes, LastNodesS1,OldAllocHW, AllocHWS1, P1),
-	mapping(AppOp,S2,LastNodesS1, LastNodesS2,AllocHWS1, AllocHWS2, P2).
+mapping(AppOp, seqIf(S1,S2), PreviousNodes, LastNodesS2, OldPlacement, PlacementS2, seqIf(P1,P2)):-
+	mapping(AppOp,S1,PreviousNodes, LastNodesS1,OldPlacement, PlacementS1, P1),
+	mapping(AppOp,S2,LastNodesS1, LastNodesS2,PlacementS1, PlacementS2, P2).
 %if case
-mapping(AppOp, if(G,L,R), PreviousNodes, LastNodesIF, OldAllocHW, AllocHWR, if(PG,PL,PR)):-
-	mapping(AppOp,G,PreviousNodes, LastNodesG,OldAllocHW, AllocHWG, PG),
-	mapping(AppOp,L,LastNodesG, LastNodesL,AllocHWG, AllocHWL, PL),
-	mapping(AppOp,R,LastNodesG, LastNodesR,AllocHWL, AllocHWR, PR),
+mapping(AppOp, if(G,L,R), PreviousNodes, LastNodesIF, OldPlacement, PlacementR, if(PG,PL,PR)):-
+	mapping(AppOp,G,PreviousNodes, LastNodesG,OldPlacement, PlacementG, PG),
+	mapping(AppOp,L,LastNodesG, LastNodesL,PlacementG, PlacementL, PL),
+	mapping(AppOp,R,LastNodesG, LastNodesR,PlacementL, PlacementR, PR),
 	append(LastNodesL, LastNodesR, LastNodesIF).
 %blob case
-mapping(AppOp, blob(FList,FType,RequiredLatency, (SWReqs, HWReqs, _)), PreviousNodes, [N], OldAllocHW, NewAllocHW, blob(PlacedFunctions,FType)):-
+mapping(AppOp, blob(FList,FType,RequiredLatency, (SWReqs, HWReqs, _)), PreviousNodes, [N], OldPlacement, [on(FList,N,HWReqs)|OldPlacement], blob(PlacedFunctions,FType)):-
 	getNode(AppOp, N, SWCaps, HWCaps),
 	checkPreviousNodesLat(PreviousNodes, N, RequiredLatency),
 	swReqsOK(SWReqs, SWCaps),
-    hwReqsOK(HWReqs, HWCaps, N, OldAllocHW, NewAllocHW),
+    hwReqsOK(HWReqs, HWCaps, N, OldPlacement),
     compatibleNodeType(FType,N),
 	bindServicesBlob(AppOp, FList, N, FType, PlacedFunctions).
 
 %par case
-mapping(AppOp, par(Par), PreviousNodes, NewLastNodesPar, OldAllocHW, NewAllocHW, par(Placement)):-
-	mappingPar(AppOp,Par, PreviousNodes, NewLastNodesPar, OldAllocHW, NewAllocHW, Placement).
+mapping(AppOp, par(Par), PreviousNodes, NewLastNodesPar, OldPlacement, NewPlacement, par(Placement)):-
+	mappingPar(AppOp,Par, PreviousNodes, NewLastNodesPar, OldPlacement, NewPlacement, Placement).
 
-mappingPar(_, [], _, [], AllocHW, AllocHW, []).
-mappingPar(AppOp, [F|FList], PreviousNodes, NewLastNodesPar, OldAllocHW, NewAllocHW, [Pf|PFList]):-
-	mapping(AppOp,F,PreviousNodes, LastNodesF,OldAllocHW, AllocHW, Pf),
-	mappingPar(AppOp,FList,PreviousNodes, LastNodesPar,AllocHW, NewAllocHW, PFList),
+mappingPar(_, [], _, [], Placement, Placement, []).
+mappingPar(AppOp, [F|FList], PreviousNodes, NewLastNodesPar, OldPlacement, NewPlacement, [Pf|PFList]):-
+	mapping(AppOp,F,PreviousNodes, LastNodesF,OldPlacement, Placement, Pf),
+	mappingPar(AppOp,FList,PreviousNodes, LastNodesPar,Placement, NewPlacement, PFList),
 	append(LastNodesF, LastNodesPar, NewLastNodesPar).
 
 getNode(_, N, SWCaps, HWCaps) :-

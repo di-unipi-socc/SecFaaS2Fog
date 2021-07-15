@@ -33,7 +33,21 @@ condTypes([Pos|CondList],InTypes, [TypePos|CondTypes]):-
 	condTypes(CondList, InTypes, CondTypes).
 
 swReqsOK(SWReqs, SWCaps):- subset(SWReqs, SWCaps).
+%hwReqsOK(HWReqs, HWCaps, N, Placement)
+%given a placement with on(Function, Node, FunctionHWReqs), check if node has hw caps for new function
+hwReqsOK((RAMReq,VCPUsReq,CPUReq),(RAMCap,VCPUsCap,CPUCap),N,P):-
+    findall(HW, (member(on(_,N,HW),P)), OkHWs),
+	sum_reqs(OkHWs, (AllocRAM,AllocVCPUs)),
+    NewAllocRAM is AllocRAM + RAMReq, RAMCap >= NewAllocRAM,
+	NewAllocVCPUs is AllocVCPUs + VCPUsReq, VCPUsCap >= NewAllocVCPUs,
+	CPUCap >= CPUReq.
+sum_reqs([],(0,0)).
+sum_reqs([(RAM, VCPUs, _)|HWs],(NewSumRAM,NewSumVCPUs)):-
+	sum_reqs(HWs, (SumRAM,SumVCPUs)),
+	NewSumRAM is SumRAM + RAM,
+	NewSumVCPUs is SumVCPUs + VCPUs.
 
+/*	
 hwReqsOK((RAMReq,VCPUsReq,CPUReq), (RAMCap,VCPUsCap,CPUCap), N, [], [(N,(RAMReq,VCPUsReq,CPUCap))]) :-
 	RAMCap >= RAMReq, CPUCap >= CPUReq, VCPUsCap >= VCPUsReq.
 hwReqsOK((RAMReq,VCPUsReq,CPUReq), (RAMCap,VCPUsCap,CPUCap), N, [(N,(AllocRAM,AllocVCPUs,CPUCap))|L], [(N,(NewAllocRAM,NewAllocVCPUs,CPUCap))|L]) :-
@@ -43,7 +57,7 @@ hwReqsOK((RAMReq,VCPUsReq,CPUReq), (RAMCap,VCPUsCap,CPUCap), N, [(N,(AllocRAM,Al
 hwReqsOK(HWReqs, HWCaps, N, [(N1,AllocHW)|L], [(N1,AllocHW)|NewL]) :-
 	N \== N1, 
 	hwReqsOK(HWReqs, HWCaps, N, L, NewL).
-
+*/
 %set_dif -> check the difference of two sets implemented by lists
 set_dif(A,B) :- once(check_set_dif(A,B)).
 check_set_dif(A,B) :- (member(X,A), \+ member(X,B)); (member(Y,B), \+ member(Y,A)).

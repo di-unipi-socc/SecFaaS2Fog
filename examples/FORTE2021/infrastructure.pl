@@ -4,7 +4,7 @@
 node(private1, privateCitizen1, [], [js], (1024,4,2500)).
 node(private2, privateCitizen2, [pubKeyE], [py3], (512,2,1500)).
 %telco
-node(ispRouter, telco, [pubKeyE, antiTamp], [py3,js,numPy],(4096, 4, 2000)).
+node(ispRouter, telco, [pubKeyE, antiTamp], [py3,js,numPy],(40960, 16, 2000)).
 node(northAntenna, telco, [pubKeyE, antiTamp], [js],(2048, 2, 1500)).
 node(southAntenna, telco, [pubKeyE], [py3,numPy],(2048, 4, 1500)).
 %universityversity

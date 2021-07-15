@@ -42,29 +42,23 @@ padding(par(List), par(PaddedList)) :-
 %given the left and right branch it pad them and give left branch padded and right branch padded
 %end marks the end of a branch, seq became list, inner if(F,L,R) became [F,innerIf(FirstL,FirstR)...innerif(endL,endR)]
 paddingIf(end,end,[],[]).
-paddingIf(end, RightBranch, [Fdummy|LeftResult],RightResult):-
-    dif(RightBranch,end),
-    extractToPad(RightBranch,FR, RightContinuation), 
-    dummyPad(FR, Fdummy), %insert dummy function to balance branches
-    paddingIf(end, RightContinuation, LeftResult, RightTemp),
-    append(FR, RightTemp, RightResult).
-
-paddingIf(LeftBranch, end, LeftResult,[Fdummy|RightResult]):-
-    dif(LeftBranch,end), 
-    extractToPad(LeftBranch,FL, LeftContinuation),
-    dummyPad(FL, Fdummy), %insert dummy function to balance branches
-    paddingIf(LeftContinuation, end, LeftTemp, RightResult),
-    append(FL,LeftTemp, LeftResult).
-
 paddingIf(LeftBranch, RightBranch, LeftResult,RightResult):-
-    dif(LeftBranch, end), 
-    dif(RightBranch, end), 
+    notBothEnd(LeftBranch,RightBranch),
     extractToPad(LeftBranch, FL, LeftContinuation),
     extractToPad(RightBranch,FR, RightContinuation),
     pad(FL, FR, FLp, FRp),
     paddingIf(LeftContinuation, RightContinuation, LeftTemp, RightTemp),
     append(FLp,LeftTemp, LeftResult),
     append(FRp, RightTemp, RightResult).
+
+%given two elements, give true if they are not both equal to end
+notBothEnd(L,end):-
+    dif(L,end).
+notBothEnd(end,R):-
+    dif(R,end).
+notBothEnd(L,R):-
+    dif(L,end),
+    dif(R,end).
 
 paddingPar([],[]).
 paddingPar([P|Plist], [Pres|PlistRes]):-
@@ -77,15 +71,14 @@ paddingPar([P|Plist], [Pres|PlistRes]):-
 dummyPad([ft(FId,Label,Bindings,Lat)],fpad(fDummyPatch,Label,Bindings,Lat,Sw,Hw,Ser)):- %dummy clone per tappare buco su ramo
     functionReqs(FId, Sw,Hw,Ser).
 %multiple ft to clone
-dummyPad([F|FList],fpad(fDummyPatch,Label,Bindings,Lat,Sw,Hw,Ser)):- 
-    dif(FList,[]),
+dummyPad(FList,fpad(fDummyPatch,Label,Bindings,Lat,Sw,Hw,Ser)):- 
+    dif(FList,[_]),
     lowestType(Lowest),
-    findCommonReqs([F|FList], ([], (0,0,0), [],[],Lowest,inf), (Sw,Hw,Ser,Bindings,Label,Lat)).
+    findCommonReqs(FList, ([], (0,0,0), [],[],Lowest,inf), (Sw,Hw,Ser,Bindings,Label,Lat)).
 
 %extractToPad(Branch, F to pad, Continuation)
 %given a branch, extract the function(s) to be padded and the continuation of the branch
 extractToPad(end,end,end).
-%extractToPad(endPar,endPar,endPar).
 extractToPad(ft(F,T,B,L), [ft(F,T,B,L)], end).
 extractToPad(seq(S1,S2), F, S2):-
     extractToPad(S1,F,end).
@@ -148,46 +141,94 @@ pad(FL, FR, FLpad, FRpad):-
     padToReqs(FLpar, PaddedReqs, FLpad), %questo forse si può fare in findCommonReqs (togliendo l'append)
     padToReqs(FRpar, PaddedReqs, FRpad).
 
-%TODO par dentro innerIf
-%checks if a branch has a par and build the par on the other branch
-checkPar([],[],[],[]).
-checkPar(Left, Right, Left, Rres):-
-    member(X,Left), isPar(X),
-    \+ (member(Y,Right), isPar(Y)),
-    buildPar(X, Right, Rres).
-checkPar(Left, Right, Lres, Right):-
-    member(Y,Right), isPar(Y),
-    \+ (member(X,Left), isPar(X)),
-    buildPar(Y, Left, Lres).
-checkPar(Left, Right, Left, Right):-
-    \+ (member(X,Left), isPar(X)),
-    \+ (member(Y,Right), isPar(Y)).
+%check if there are par involved and build the par structure to balance if and inner ifs branches
+checkPar(Left,Right,NewLeft,NewRight):-
+    longestPar(Left, LongestLeft),
+    longestPar(Right, LongestRight),
+    greaterPar(LongestLeft, LongestRight, Longest),
+    buildPar(Longest, Left, NewLeft),
+    buildPar(Longest, Right, NewRight).
 
-buildPar(par(ParList), Branch, [par(BranchRes)]):-
-    createOtherBranch(ParList, Branch, BranchRes).
+%it finds the biggest par structure of the branch that will be used to balance the pars of if branches
+longestPar([par(ParList)],ParList).
+longestPar([innerIf(L,R)],Longest):-
+    longestPar(L, LongestL),
+    longestPar(R, LongestR),
+    greaterPar(LongestL, LongestR, Longest).
+longestPar(X,[]):-
+    \+(isPar(X)), \+(isInnerIf(X)).
 
-createOtherBranch([],B,B).
-createOtherBranch([endPar|Ps],B, [endPar|Bres]) :- createOtherBranch(Ps,B,Bres).
-createOtherBranch([F1|Ps],[F2|Bs], [F2|Bres]) :- 
+%given two par structure, generated the template for the max common par structure
+greaterPar([],[],[]).
+greaterPar([endPar|P1],[endPar|P2],[endPar|PG]):-
+    greaterPar(P1,P2,PG).
+greaterPar([X|P1],[endPar|P2],[dummyPar|PG]):-
+    dif(X,endPar),
+    greaterPar(P1,P2,PG).
+greaterPar([endPar|P1],[X|P2],[dummyPar|PG]):-
+    dif(X,endPar),
+    greaterPar(P1,P2,PG).
+greaterPar([X|P1],[Y|P2],[dummyPar|PG]):-
+    dif(X,endPar),dif(Y,endPar),
+    greaterPar(P1,P2,PG).
+greaterPar([],[endPar|P2],[endPar|PG]):-
+    greaterPar([],P2,PG).
+greaterPar([],[X|P2],[dummyPar|PG]):-
+    dif(X,endPar),
+    greaterPar([],P2,PG).
+greaterPar([endPar|P1],[],[endPar|PG]):-
+    greaterPar(P1,[],PG).
+greaterPar([X|P1],[],[dummyPar|PG]):-
+    dif(X,endPar),
+    greaterPar(P1,[],PG).
+
+%buildPar(LongestPar, Branch, NewBranch) it build the longest par structure in Branch, building id in NewBranch
+%no par structure to insert
+buildPar([],Branch, Branch).
+%no par and no innerIf
+buildPar(ParList, Branch, NewBranch):-
+    dif(ParList,[]), \+(isPar(Branch)), \+(isInnerIf(Branch)),
+    buildParStructure([par(ParList)],Branch, NewBranch).
+%different par structure used, to balance
+buildPar(ParList, [par(BranchParList)], [par(NewBranchList)]):-
+    dif(ParList,[]), dif(ParList, BranchParList),
+    balanceLists(ParList, BranchParList, NewBranchList).
+%innerIf
+buildPar(ParList, [innerIf(L,R)], [innerIf(NewL,NewR)]):-
+    dif(ParList,[]),
+    buildPar(ParList,L,NewL),
+    buildPar(ParList,R, NewR).
+
+%build a par structure inside a branch without par or innerIf
+buildParStructure([par(ParList)], Branch, [par(BranchRes)]):-
+    createParInBranch(ParList, Branch, BranchRes).
+
+%create the branch with a par structure as ParList
+createParInBranch(ParList,end,Res):-
+    createParInBranch(ParList,[],Res).
+createParInBranch([],B,B).
+createParInBranch([endPar|Ps],B, [endPar|Bres]) :- createParInBranch(Ps,B,Bres).
+createParInBranch([F1|Ps],[F2|Bs], [F2|Bres]) :- 
     dif(F1,endPar),
-    createOtherBranch(Ps,Bs,Bres).
-createOtherBranch([F1|Ps],[], [dummyPar|Bres]) :- 
+    createParInBranch(Ps,Bs,Bres).
+createParInBranch([F1|Ps],[], [dummyPar|Bres]) :- 
     dif(F1,endPar),
-    createOtherBranch(Ps,[],Bres).
+    createParInBranch(Ps,[],Bres).
 
-countNotEndP([],0).
-countNotEndP([endPar|L],R):-
-    countNotEndP(L,R).
-countNotEndP([F|L],R):-
-    dif(F,endPar),
-    countNotEndP(L,N),
-    R is N + 1.
-
-dummyList(0,[]).
-dummyList(N,[dummyPar|List]):-
-    N > 0,
-    NewN is N - 1,
-    dummyList(NewN, List).
+%balanceLists(TemplateParList, ParList, ParListTemplated)
+%given the template par structure, build it in the given par list
+balanceLists([],[],[]).
+balanceLists([endPar|L],[],[endPar|NewS]):-
+    balanceLists(L,[],NewS).
+balanceLists([dummyPar|L],[],[dummyPar|NewS]):-
+    balanceLists(L,[],NewS).
+balanceLists([endPar|L],[endPar|S],[endPar|NewS]):-
+    balanceLists(L,S,NewS).
+balanceLists([dummyPar|L],[endPar|S],[dummyPar|NewS]):-
+    balanceLists(L,S,NewS).
+balanceLists([dummyPar|L],[Element|S],[Element|NewS]):-
+    dif(Element,endPar),
+    balanceLists(L,S,NewS).
 
 %scan the function list to find the common reqs to be padded
 findCommonReqs([],R,R).
@@ -237,7 +278,7 @@ buildMinSer([(Ser,Lat1),(Ser,Lat2)|OtherS],SerR):-
     buildMinSer([(Ser,LatMin)|OtherS],SerR).
 
 
-%given the common reqs, it add the padding to every function
+%given the common reqs, it add the padding to every function %TODO-Question: dummypatch lat at 0?
 padToReqs([],_,[]).
 padToReqs(end,(SwReqs,HWReqs,SerReqs, Binds,T,_),[fpad(fDummyPatch,T,Binds,0,SwReqs,HWReqs,SerReqs)]).
 padToReqs([endPar|FR],(SwReqs,HWReqs,SerReqs, Binds,T,L),[endPar|TempFR]):-
@@ -251,12 +292,12 @@ padToReqs([fpad(FId,T,Binds,0,SwReqs,HWReqs,SerReqs)|FR],(SwReqs,HWReqs,SerReqs,
 %ft that does not need padding
 padToReqs([ft(FId,Ft,Fb,Fl)|FR],Reqs,[ft(FId,Ft,Fb,Fl)|FRResult]):-
    functionReqs(FId,SwF,HWF,FSerReqs),
-    dontNeedsPad((SwF,HWF,FSerReqs, Fb,Ft,Fl),Reqs),
+    dontNeedPad((SwF,HWF,FSerReqs, Fb,Ft,Fl),Reqs),
     padToReqs(FR,Reqs, FRResult).
 %ft that needs padding and dummy function for service call
 padToReqs([ft(FId,Ft,Fb,Fl)|FR],(SwReqs,HWReqs,SerReqs, Binds,Type,Lat),[seq(fpad(FId,Type,Fb,Lat,SwReqs,HWReqs,FSerReqs),DummyF)|FRResult]):-
     functionReqs(FId,SwF,HWF,FSerReqs),
-    \+(dontNeedsPad((SwF,HWF,FSerReqs, Fb,Ft,Fl),(SwReqs,HWReqs,SerReqs, Binds,Type,Lat))),
+    \+(dontNeedPad((SwF,HWF,FSerReqs, Fb,Ft,Fl),(SwReqs,HWReqs,SerReqs, Binds,Type,Lat))),
     subtract(SerReqs,FSerReqs,ServicesToPad),
     dif(ServicesToPad, []),
     subtract(Binds,Fb,DummyBinds),
@@ -265,7 +306,7 @@ padToReqs([ft(FId,Ft,Fb,Fl)|FR],(SwReqs,HWReqs,SerReqs, Binds,Type,Lat),[seq(fpa
 %ft that need padding but not dummy function for service call
 padToReqs([ft(FId,Ft,Fb,Fl)|FR],(SwReqs,HWReqs,SerReqs, Binds,Type,Lat),[fpad(FId,Type,Fb,Lat,SwReqs,HWReqs,FSerReqs)|FRResult]):-
     functionReqs(FId,SwF,HWF,FSerReqs),
-    \+(dontNeedsPad((SwF,HWF,FSerReqs, Fb,Ft,Fl),(SwReqs,HWReqs,SerReqs, Binds,Type,Lat))),
+    \+(dontNeedPad((SwF,HWF,FSerReqs, Fb,Ft,Fl),(SwReqs,HWReqs,SerReqs, Binds,Type,Lat))),
     subtract(SerReqs,FSerReqs,[]),
     padToReqs(FR,(SwReqs,HWReqs,SerReqs, Binds,Type,Lat), FRResult).
 padToReqs([innerIf(L,R)|FR],Reqs,[innerIf(LRes,RRes)|FRResult]):-
@@ -280,7 +321,7 @@ padToReqs([par(List)|FR],Reqs,[par(ListRes)|FRResult]):-
 createDummy(SerReqs,_,_,Binds,T, fpad(fDummy, T,Binds,0,[],(0,0,0),SerReqs)).
 
 %used to avoid to add reduntant padding to functions already with the common reqs
-dontNeedsPad((SwF, HWReqs, SerF,Binds,T,L), (SwReqs,HWReqs,SerReqs, BindsReq,T,L)):-
+dontNeedPad((SwF, HWReqs, SerF,Binds,T,L), (SwReqs,HWReqs,SerReqs, BindsReq,T,L)):-
     \+(set_dif(SwF,SwReqs)),
     \+(set_dif(SerF,SerReqs)),
     \+(set_dif(Binds,BindsReq)).
@@ -290,15 +331,23 @@ dontNeedsPad((SwF, HWReqs, SerF,Binds,T,L), (SwReqs,HWReqs,SerReqs, BindsReq,T,L
 %Format the output of the padding building sequences, inner ifs and parallels has input orchestrations
 formatPaddedOrch(PadOrchestration, FormattedPadOrchestration):-
     formatP(PadOrchestration, FormattedPadOrchestration).
-
+%basic formatting
 formatP(ft(Fid,Label,Binding,Latency),ft(Fid,Label,Binding,Latency)).
+formatP(fpad(FId,T,B,L,Sw,HW,Ser),fpad(FId,T,B,L,Sw,HW,Ser)).
 formatP(seq(F1,F2),seq(Wf1,Wf2)) :-
 	formatP(F1,Wf1), formatP(F2,Wf2).
-formatP(if(G, L, R), if(G,Fl,Fr)) :-
-	 formatIf(L,Fl), formatIf(R,Fr).
 formatP(par(List), par(Res)):-
     formatPar(List, Res).
+formatP(if(G, L, R), if(G,Fl,Fr)) :-
+	 formatIf(L,Fl), formatIf(R,Fr).
 
+%format par construct
+formatPar([],[]).
+formatPar([P|Ps],[Pp|Psp]):-
+    formatP(P,Pp),
+    formatPar(Ps, Psp).
+
+%if formatting
 formatIf(A,A):- \+(is_list(A)).
 formatIf([A],A).
 formatIf([ft(Fid,Label,Binding,Latency),Succ|Rem],seq(ft(Fid,Label,Binding,Latency),FRest)):- \+(isInnerIf(Succ)), formatIf([Succ|Rem], FRest).
@@ -309,40 +358,34 @@ formatIf([seq(A,B)|Rem],seq(seq(ResA,ResB),ResRem)):-
     formatIf(Rem,ResRem).
 formatIf([Guard,innerIf(L,R)|Rem], if(Guard,Fl,Fr)):-
     \+(isInnerIf(Guard)),
-    buildBranches(L,R,Rem,Fl,Fr,[]).
+    separateInnerIf([innerIf(L,R)|Rem], Left,Right,[]),
+    formatIf(Left,Fl),
+    formatIf(Right,Fr).
 formatIf([Guard,innerIf(L,R)|Rem], seq(if(Guard,Fl,Fr),FormattedAfterIf)):-
-   \+(isInnerIf(Guard)),
-    buildBranches(L,R,Rem,Fl,Fr,AfterIf),
+    \+(isInnerIf(Guard)),
+    separateInnerIf([innerIf(L,R)|Rem], Left,Right,AfterIf), 
     dif(AfterIf,[]),
+    formatIf(Left,Fl),
+    formatIf(Right,Fr),
     formatIf(AfterIf, FormattedAfterIf).
-formatIf([par(Par)|Rem], par(MergedPar)):-
-    mergePar(Par,Rem,MergedPar,[]).
-formatIf([par(Par)|Rem], seq(par(MergedPar), FormattedAfterPar)):-
+formatIf([par(Par)|Rem], par(FormattedPar)):-
+    mergePar(Par,Rem,MergedPar,[]),
+    formatPar(MergedPar, FormattedPar).
+formatIf([par(Par)|Rem], seq(par(FormattedPar), FormattedAfterPar)):-
     mergePar(Par,Rem,MergedPar,AfterPar),
     formatIf(AfterPar, FormattedAfterPar),
-    dif(FormattedAfterPar,[]).
+    dif(FormattedAfterPar,[]),
+    formatPar(MergedPar, FormattedPar).
 
-formatPar([],[]).
-formatPar([P|Ps],[Pp|Psp]):-
-    formatP(P,Pp),
-    formatPar(Ps, Psp).
-buildBranches(L,R,[],LSeq,RSeq,[]):-
-    buildSeq(L,LSeq),
-    buildSeq(R,RSeq).
-buildBranches(L1,R1,[innerIf(L2,R2)|Rem],seq(LSeq,Lf),seq(RSeq,Rf),AfterIf):-
-    buildSeq(L1,LSeq),
-    buildSeq(R1,RSeq),
-    buildBranches(L2,R2,Rem, Lf,Rf, AfterIf).
-buildBranches(L1,R1,[C|Rem],LSeq,RSeq,[C|Rem]):-
-    \+(isInnerIf(C)),
-    buildSeq(L1,LSeq),
-    buildSeq(R1,RSeq).
+%separateInnerIf: build left and right branches from innerIfs
+%MainList, LeftBranchSeparated, RightBranchSeparated, StuffAfterIf
+separateInnerIf([],[],[],[]).
+separateInnerIf([E|Rem],[],[],[E|Rem]):-
+    \+(isInnerIf(E)).
+separateInnerIf([innerIf([L],[R])|Rem],[L|LeftBranch],[R|RightBranch],Rest):-
+    separateInnerIf(Rem, LeftBranch,RightBranch, Rest).
 
-buildSeq([A],A).
-buildSeq([A|List],seq(A,Res)):-
-    dif(List,[]),
-    buildSeq(List,Res).
-
+%mergePar: builds a par list, giving the merging and the continuation after the par
 mergePar(Par,[],Par,[]).
 mergePar(Par1,[par(Par2)|Rem],MergedPar,AfterPar):-
     mergeParLists(Par1,Par2,ParMerged),
@@ -357,5 +400,9 @@ mergeParLists([L1|List1],[L2|List2],[seq(L1,L2)|Lmerge]):-
 mergeParLists([L1|List1],[endPar|List2],[L1|Lmerge]):-
     mergeParLists(List1,List2,Lmerge).
 
+%check if something is an innerIf
 isInnerIf(innerIf(_,_)).
+isInnerIf([innerIf(_,_)]).
+%checks if something is a par
 isPar(par([_|_])).
+isPar([par([_|_])]).

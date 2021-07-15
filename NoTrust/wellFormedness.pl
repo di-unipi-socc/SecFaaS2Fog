@@ -12,7 +12,7 @@ wellFormed(seq(A,B), seq(Ares,Bres)):-
 	\+ (A = fun(_,_,_),B = seq(_,_)),
 	wellFormed(A,Ares),
 	wellFormed(B,Bres).
-wellFormed(par([A]),Ares):- wellFormed(A,Ares).
+wellFormed(par([A]),Ares):- wellFormed(A,Ares).%TODO: to support padding reorder the list of the par by lenght could be a good idea
 wellFormed(par([H|T]), par(ResPar)):-
 	T \== [],
 	wellFormedPar([H|T],ResPar).

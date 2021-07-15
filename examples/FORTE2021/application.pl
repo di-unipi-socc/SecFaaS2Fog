@@ -4,16 +4,16 @@
 % functionReqs(functionId, listOfSWReqs, HWReqs(memory, vCPU, Htz), timeout, listOfServiceReqs(serviceType, latency))
 functionReqs(fLogin, [py3], (1024, 2, 500), [(userDB, 13)]).
 functionReqs(fShop, [py3, numPy], (2048, 4, 1200), []).
-functionReqs(fGeo, [js], (1024, 2, 400), [(maps, 30)]).
-functionReqs(fGather, [js], (1024, 2, 500), [(shops, 12)]).
+functionReqs(fGeo, [js], (1024, 2, 400), [(maps, 300)]).
+functionReqs(fGather, [js], (102, 2, 500), [(shops, 1020)]).
 functionReqs(fNav, [js], (1024, 2, 500), [(maps, 300)]).
 functionReqs(fNav2, [js], (1024, 2, 500), [(maps, 300)]).
-functionReqs(fNav3, [js], (1024, 2, 500), [(maps, 300)]).
-functionReqs(fBook, [js], (1024, 2, 500), [(shops, 120)]).
-functionReqs(fBook2, [js], (1024, 2, 500), [(shops, 120)]).
+functionReqs(fNav3, [js], (256, 2, 500), [(maps, 600)]).
+functionReqs(fBook, [js], (1024, 2, 500), [(shops, 1200)]).
+functionReqs(fBook2, [js], (528, 2, 500), [(shops, 650)]).
 functionReqs(fAR, [py3, numPy], (2048, 4, 1200), []).
-functionReqs(fAR2, [py3, numPy], (2048, 4, 1200), []).
-functionReqs(fAR3, [py3, numPy], (2048, 4, 1200), []).
+functionReqs(fAR2, [py3, numPy], (456, 4, 1200), []).
+functionReqs(fAR3, [py3, numPy], (556, 4, 1200), []).
 functionReqs(fSynch, [], (0, 0, 0), []).
 
 %functionBehaviour(functionId, listOfInputs, listOfun(serviceReq, TypeParam), listOfOutputs)
@@ -102,9 +102,19 @@ functionOrch(
 
 functionOrch(
   orchTest8, appOp,(userDevice, [top,medium,low, low]), %[userInfo, screen, geo, sensors], latency
-  if(fun(fLogin,[myUsers],60),
-        seq(par([seq(fun(fNav3, [], 100), fun(fAR3, [], 100)), fun(fGather, [], 100),fun(fAR2, [], 100)]),fun(fSynch,[],150)),
-        seq(seq(fun(fNav3,[],120),fun(fBook2,[myShop],150)),fun(fAR3,[],100))
+  if(fun(fLogin,[myUsers],600),
+        seq(par([seq(fun(fNav3, [], 1000), fun(fAR3, [], 1000)), fun(fGather, [], 1000),fun(fAR2, [], 1000)]),fun(fSynch,[],1500)),
+        seq(seq(fun(fNav3,[],1200),fun(fBook2,[myShop],1500)),fun(fAR3,[],1000))
+      )
+).
+
+functionOrch(
+  orchTest9, appOp,(userDevice, [top,medium,low, low]), %[userInfo, screen, geo, sensors], latency
+  if(fun(fLogin,[myUsers],600),
+        if(fun(fShop, [], 300),
+            seq(par([seq(fun(fNav3, [], 1000), fun(fAR3, [], 1000)), fun(fGather, [], 1000),fun(fAR2, [], 1000)]),fun(fSynch,[],1500)),
+            fun(fNav3,[],900)),
+        seq(seq(fun(fNav3,[],1200),fun(fBook2,[myShop],1500)),fun(fAR3,[],1000))
       )
 ).
 
