@@ -348,21 +348,29 @@ formatPar([P|Ps],[Pp|Psp]):-
     formatPar(Ps, Psp).
 
 %if formatting
-formatIf(A,A):- \+(is_list(A)).
-formatIf([A],A).
+%formatIf(A,A):- \+(is_list(A)).
+%single element cases
+formatIf([ft(Fid,Label,Binding,Latency)],ft(Fid,Label,Binding,Latency)).
+formatIf([fpad(FId, T, B, L, Sw, HW, Ser)],fpad(FId, T, B, L, Sw, HW, Ser)).
+formatIf([seq(A,B)],seq(ResA,ResB)):-
+    formatIf([A],ResA), formatIf([B],ResB).
+%multi element, to avoid lost guard of innerif    
 formatIf([ft(Fid,Label,Binding,Latency),Succ|Rem],seq(ft(Fid,Label,Binding,Latency),FRest)):- \+(isInnerIf(Succ)), formatIf([Succ|Rem], FRest).
 formatIf([fpad(FId, T, B, L, Sw, HW, Ser),Succ|Rem],seq(fpad(FId, T, B, L, Sw, HW, Ser),FRest)):- \+(isInnerIf(Succ)), formatIf([Succ|Rem], FRest).
-formatIf([seq(A,B)|Rem],seq(seq(ResA,ResB),ResRem)):-
-    formatIf(A,ResA),
-    formatIf(B,ResB),
-    formatIf(Rem,ResRem).
-formatIf([Guard,innerIf(L,R)|Rem], if(Guard,Fl,Fr)):-
+formatIf([seq(A,B),Succ|Rem],seq(seq(ResA,ResB),ResRem)):-
+    \+(isInnerIf(Succ)),
+    formatIf([A],ResA),
+    formatIf([B],ResB),
+    formatIf([Succ|Rem],ResRem).
+formatIf([Guard,innerIf(L,R)|Rem], if(GuardF,Fl,Fr)):-
     \+(isInnerIf(Guard)),
+    formatIf([Guard], GuardF),
     separateInnerIf([innerIf(L,R)|Rem], Left,Right,[]),
     formatIf(Left,Fl),
     formatIf(Right,Fr).
-formatIf([Guard,innerIf(L,R)|Rem], seq(if(Guard,Fl,Fr),FormattedAfterIf)):-
+formatIf([Guard,innerIf(L,R)|Rem], seq(if(GuardF,Fl,Fr),FormattedAfterIf)):-
     \+(isInnerIf(Guard)),
+    formatIf([Guard], GuardF),
     separateInnerIf([innerIf(L,R)|Rem], Left,Right,AfterIf), 
     dif(AfterIf,[]),
     formatIf(Left,Fl),
@@ -370,12 +378,12 @@ formatIf([Guard,innerIf(L,R)|Rem], seq(if(Guard,Fl,Fr),FormattedAfterIf)):-
     formatIf(AfterIf, FormattedAfterIf).
 formatIf([par(Par)|Rem], par(FormattedPar)):-
     mergePar(Par,Rem,MergedPar,[]),
-    formatPar(MergedPar, FormattedPar).
+    formatParIf(MergedPar, FormattedPar).
 formatIf([par(Par)|Rem], seq(par(FormattedPar), FormattedAfterPar)):-
     mergePar(Par,Rem,MergedPar,AfterPar),
-    formatIf(AfterPar, FormattedAfterPar),
-    dif(FormattedAfterPar,[]),
-    formatPar(MergedPar, FormattedPar).
+    dif(AfterPar,[]),
+    formatParIf(MergedPar, FormattedPar),
+    formatIf(AfterPar, FormattedAfterPar).
 
 %separateInnerIf: build left and right branches from innerIfs
 %MainList, LeftBranchSeparated, RightBranchSeparated, StuffAfterIf
@@ -386,6 +394,7 @@ separateInnerIf([innerIf([L],[R])|Rem],[L|LeftBranch],[R|RightBranch],Rest):-
     separateInnerIf(Rem, LeftBranch,RightBranch, Rest).
 
 %mergePar: builds a par list, giving the merging and the continuation after the par
+%ParList, SuccessorOnBranch, MergedPar, ContinuationAfterPar
 mergePar(Par,[],Par,[]).
 mergePar(Par1,[par(Par2)|Rem],MergedPar,AfterPar):-
     mergeParLists(Par1,Par2,ParMerged),
@@ -393,12 +402,30 @@ mergePar(Par1,[par(Par2)|Rem],MergedPar,AfterPar):-
 mergePar(Par,[F|Rem],Par,[F|Rem]):-
     \+(isPar(F)).
 
+%add the element of the second list to the first list skipping endPars
+%the result is a list of list, each list is a parallel composition to format
 mergeParLists([],[],[]).
-mergeParLists([L1|List1],[L2|List2],[seq(L1,L2)|Lmerge]):-
+mergeParLists([L1|List1],[L2|List2],[[L1,L2]|Lmerge]):-
+    \+(is_list(L1)),
     dif(L2,endPar),
     mergeParLists(List1,List2,Lmerge).
-mergeParLists([L1|List1],[endPar|List2],[L1|Lmerge]):-
+mergeParLists([L1|List1],[endPar|List2],[[L1]|Lmerge]):-
+     \+(is_list(L1)),
     mergeParLists(List1,List2,Lmerge).
+mergeParLists([L1|List1],[L2|List2],[Lres|Lmerge]):-
+    is_list(L1),
+    dif(L2,endPar),
+    mergeParLists(List1,List2,Lmerge),
+    append(L1,[L2],Lres).
+mergeParLists([L1|List1],[endPar|List2],[L1|Lmerge]):-
+    is_list(L1),
+    mergeParLists(List1,List2,Lmerge).
+
+%format every component of a parallel inside an if
+formatParIf([],[]).
+formatParIf([P|Ps],[Pp|Psp]):-
+    formatIf(P,Pp),
+    formatParIf(Ps, Psp).
 
 %check if something is an innerIf
 isInnerIf(innerIf(_,_)).

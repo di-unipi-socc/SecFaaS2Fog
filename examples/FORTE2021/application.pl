@@ -49,7 +49,7 @@ functionOrch(
 ).
 
 functionOrch(
-  orchTest10, appOp,(userDevice, [top,medium,low, low]), %[userInfo, screen, geo, sensors], latency
+  orchTest101, appOp,(userDevice, [top,medium,low, low]), %[userInfo, screen, geo, sensors], latency
   if(fun(fLogin,[],50),
         seq(fun(fNav,[],120),fun(fBook,[],100)),
         seq(fun(fNav2,[],120),fun(fBook2,[],100))
@@ -118,6 +118,15 @@ functionOrch(
       )
 ).
 
+functionOrch(
+  orchTest10, appOp,(userDevice, [top,medium,low, low]), %[userInfo, screen, geo, sensors], latency
+  if(fun(fLogin,[myUsers],600),
+        if(fun(fShop, [], 300),
+            seq(par([if(fun(fNav3, [], 1000), fun(fBook2,[],1500),fun(fAR3, [], 1000)), fun(fGather, [], 1000),fun(fAR2, [], 1000)]),fun(fSynch,[],1500)),
+            fun(fNav3,[],900)),
+        seq(seq(fun(fNav3,[],1200),fun(fBook2,[],1500)),fun(fAR3,[],1000))
+      )
+).
 
 % lattice of security types
 g_lattice_higherThan(top, medium).
