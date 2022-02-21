@@ -1,8 +1,4 @@
 %clean the orchestration for the other phases
-wellFormedTest(OrchId, NewOrchestration):- 
-	functionOrch(OrchId, _, _, Orchestration),
-	wellFormed(Orchestration, NewOrchestration).
-
 wellFormed(fun(F,B,L),fun(F,B,L)).
 %bring seq(A,seq(B,C)) to seq(seq(A,B),C)
 wellFormed(seq(fun(F,B,L),seq(S1,S2)), seq(seq(fun(F,B,L),S1res),S2res)):-

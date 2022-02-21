@@ -1,80 +1,51 @@
 %---------------- test predicates
-testPadFormat(OrchId, FormattedPadOrchestration):-
-    functionOrch(OrchId, _, (_,TriggerTypes), Orchestration),
-	wellFormed(Orchestration,WFOrchestration),
-    typePropagation(TriggerTypes,WFOrchestration,TypedOrchestration),
-    padding(TypedOrchestration, PadOrchestration),
+%----------------------------------
+padding(TypedOrchestration, FormattedPadOrchestration):-
+    innerPadding(TypedOrchestration, PadOrchestration),
     formatPaddedOrch(PadOrchestration, FormattedPadOrchestration).
 
-testPad(OrchId, PadOrchestration):-
-    functionOrch(OrchId, _, (_,TriggerTypes), Orchestration),
-	wellFormed(Orchestration,WFOrchestration),
-    typePropagation(TriggerTypes,WFOrchestration,TypedOrchestration),
-    padding(TypedOrchestration, PadOrchestration).
-
-testPadMap(OrchId, Placement):-
-   functionOrch(OrchId, AppOp, (GeneratorId,TriggerTypes), Orchestration),
-	wellFormed(Orchestration,WFOrchestration),
-    typePropagation(TriggerTypes,WFOrchestration,TypedOrchestration),
-    padding(TypedOrchestration, PadOrchestration),
-    formatPaddedOrch(PadOrchestration, FormattedPadOrchestration),
-    mapping(AppOp, FormattedPadOrchestration, GeneratorId, Placement).
-
-notDuplicatePad(OrchId):-
-	findall(P,testPadMap(OrchId, P), Ps),
-	list_to_set(Ps,S),
-	length(Ps, R1),
-	length(S, R2),
-	R1 =:= R2,
-    dif(R1,0). 
-%----------------------------------
 %main padding predicate, only if case is relevant for padding
-padding(ft(Fid,Label,Binding,Latency),ft(Fid,Label,Binding,Latency)).
-padding(seq(F1,F2),seq(Wf1,Wf2)) :-
-	padding(F1,Wf1), padding(F2,Wf2).
-padding(if(ft(Fid,Type,Binding,Latency), LeftB, RightB), if(ft(Fid,Type,Binding,Latency), LeftPadded,RightPadded)) :-
+innerPadding(ft(Fid,Label,Binding,Latency),ft(Fid,Label,Binding,Latency)).
+innerPadding(seq(F1,F2),seq(Wf1,Wf2)) :-
+	innerPadding(F1,Wf1), innerPadding(F2,Wf2).
+innerPadding(if(ft(Fid,Type,Binding,Latency), LeftB, RightB), if(ft(Fid,Type,Binding,Latency), LeftPadded,RightPadded)) :-
 	paddingIf(LeftB, RightB, LeftPadded,RightPadded).
-padding(par([]),[]).
-padding(par(List), par(PaddedList)) :-
-	paddingPar(List, PaddedList).
+innerPadding(par(List), par(PaddedList)) :-
+    dif(List,[]), paddingPar(List, PaddedList).
+innerPadding(par([]),[]).
 
-%paddingIf(LeftBranch, RightBranch, LeftBranchAfterPadding, RightBranchAfterPadding)
+%paddingIf(TrueBranch, RightBranch, LeftBranchAfterPadding, RightBranchAfterPadding)
 %given the left and right branch it pad them and give left branch padded and right branch padded
 %end marks the end of a branch, seq became list, inner if(F,L,R) became [F,innerIf(FirstL,FirstR)...innerif(endL,endR)]
 paddingIf(end,end,[],[]).
-paddingIf(LeftBranch, RightBranch, LeftResult,RightResult):-
-    notBothEnd(LeftBranch,RightBranch),
-    extractToPad(LeftBranch, FL, LeftContinuation),
-    extractToPad(RightBranch,FR, RightContinuation),
-    pad(FL, FR, FLp, FRp),
-    paddingIf(LeftContinuation, RightContinuation, LeftTemp, RightTemp),
-    append(FLp,LeftTemp, LeftResult),
-    append(FRp, RightTemp, RightResult).
+paddingIf(TrueBranch,FalseBranch,TrueBranchPadded, FalseBranchPadded):-
+    \+ (TrueBranch=end,FalseBranch=end),
+    extractToPad(TrueBranch, Ft, TrueContinuation),
+    extractToPad(FalseBranch,Ff, FalseContinuation),
+    pad(Ft, Ff, Ftp, Ffp),
+    paddingIf(TrueContinuation, FalseContinuation, TTemp, FTemp),
+    append(Ftp,TTemp, TrueBranchPadded),
+    append(Ffp, FTemp, FalseBranchPadded).
 
-%given two elements, give true if they are not both equal to end
-notBothEnd(L,end):-
-    dif(L,end).
-notBothEnd(end,R):-
-    dif(R,end).
-notBothEnd(L,R):-
-    dif(L,end),
-    dif(R,end).
+
 
 paddingPar([],[]).
 paddingPar([P|Plist], [Pres|PlistRes]):-
-    padding(P,Pres),
+    innerPadding(P,Pres),
     paddingPar(Plist, PlistRes).
 
 %dummyPad(ListOfFunctionsOnOtherBranch, DummyFunction) insert a dummy function to balance branches
 %input is a list because inner if create sub branches to be pad
 %single ft to clone
-dummyPad([ft(FId,Label,Bindings,Lat)],fpad(fDummyPatch,Label,Bindings,Lat,Sw,Hw,Ser)):- %dummy clone per tappare buco su ramo
-    functionReqs(FId, Sw,Hw,Ser).
+dummyPad([ft(FId,Label,Bindings,Lat)],fpad(FCid,Label,Bindings,Lat,Sw,Hw,Ser)):- %dummy clone per tappare buco su ramo
+    functionReqs(FId, Sw,Hw,Ser),
+    gensym(fContextPad,FCid).
 %multiple ft to clone
-dummyPad(FList,fpad(fDummyPatch,Label,Bindings,Lat,Sw,Hw,Ser)):- 
+dummyPad(FList,fpad(FCid,Label,Bindings,Lat,Sw,Hw,Ser)):- 
     dif(FList,[_]),
     lowestType(Lowest),
-    findCommonReqs(FList, ([], (0,0,0), [],[],Lowest,inf), (Sw,Hw,Ser,Bindings,Label,Lat)).
+    findCommonReqs(FList, ([], (0,0,0), [],[],Lowest,inf), (Sw,Hw,Ser,Bindings,Label,Lat)),
+    gensym(fContextPad,FCid).
 
 %extractToPad(Branch, F to pad, Continuation)
 %given a branch, extract the function(s) to be padded and the continuation of the branch
@@ -118,8 +89,7 @@ innerIfcont(CL, end, innerIf(CL, end)):- dif(CL, end).
 innerIfcont(CL, CR, innerIf(CL,CR)):- dif(CL, end), dif(CR, end).
 
 %isEndList: used to understand if a parallel list is all ended
-isEndList([end]).
-isEndList([end|P]):- isEndList(P).
+isEndList(L) :- \+ (member(X,L), dif(X,end)).
 
 %substituteEnds: it substitute end with endPar to mark the end of a parallel execution (to avoid confusion with end of an if branch)
 substituteEnds([],[]).
@@ -277,16 +247,18 @@ buildMinSer([(Ser,Lat1),(Ser,Lat2)|OtherS],SerR):-
     LatMin is min(Lat1,Lat2),
     buildMinSer([(Ser,LatMin)|OtherS],SerR).
 
-
 %given the common reqs, it add the padding to every function %TODO-Question: dummypatch lat at 0?
 padToReqs([],_,[]).
-padToReqs(end,(SwReqs,HWReqs,SerReqs, Binds,T,_),[fpad(fDummyPatch,T,Binds,0,SwReqs,HWReqs,SerReqs)]).
+padToReqs(end,(SwReqs,HWReqs,SerReqs, Binds,T,_),[fpad(FCid,T,Binds,0,SwReqs,HWReqs,SerReqs)]):-
+    gensym(fContextPad,FCid).
 padToReqs([endPar|FR],(SwReqs,HWReqs,SerReqs, Binds,T,L),[endPar|TempFR]):-
     padToReqs(FR, (SwReqs,HWReqs,SerReqs, Binds,T, L), TempFR).
-padToReqs([end|FR],(SwReqs,HWReqs,SerReqs, Binds,T,L),[fpad(fDummyPatch,T,Binds,0,SwReqs,HWReqs,SerReqs)|TempFR]):-
-    padToReqs(FR, (SwReqs,HWReqs,SerReqs, Binds,T, L), TempFR).
-padToReqs([dummyPar|FR],(SwReqs,HWReqs,SerReqs, Binds,T,L),[fpad(fDummyPatch,T,Binds,0,SwReqs,HWReqs,SerReqs)|TempFR]):-
-    padToReqs(FR, (SwReqs,HWReqs,SerReqs, Binds,T, L), TempFR).
+padToReqs([end|FR],(SwReqs,HWReqs,SerReqs, Binds,T,L),[fpad(FCid,T,Binds,0,SwReqs,HWReqs,SerReqs)|TempFR]):-
+    padToReqs(FR, (SwReqs,HWReqs,SerReqs, Binds,T, L), TempFR),
+    gensym(fContextPad,FCid).
+padToReqs([dummyPar|FR],(SwReqs,HWReqs,SerReqs, Binds,T,L),[fpad(FCid,T,Binds,0,SwReqs,HWReqs,SerReqs)|TempFR]):-
+    padToReqs(FR, (SwReqs,HWReqs,SerReqs, Binds,T, L), TempFR),
+    gensym(fContextPad,FCid).
 padToReqs([fpad(FId,T,Binds,0,SwReqs,HWReqs,SerReqs)|FR],(SwReqs,HWReqs,SerReqs, Binds,Tr,L),[fpad(FId,T,Binds,0,SwReqs,HWReqs,SerReqs)|TempFR]):-
     padToReqs(FR, (SwReqs,HWReqs,SerReqs, Binds,Tr,L), TempFR).
 %ft that does not need padding
@@ -295,19 +267,20 @@ padToReqs([ft(FId,Ft,Fb,Fl)|FR],Reqs,[ft(FId,Ft,Fb,Fl)|FRResult]):-
     dontNeedPad((SwF,HWF,FSerReqs, Fb,Ft,Fl),Reqs),
     padToReqs(FR,Reqs, FRResult).
 %ft that needs padding and dummy function for service call
-padToReqs([ft(FId,Ft,Fb,Fl)|FR],(SwReqs,HWReqs,SerReqs, Binds,Type,Lat),[seq(fpad(FId,Type,Fb,Lat,SwReqs,HWReqs,FSerReqs),DummyF)|FRResult]):-
+padToReqs([ft(FId,Ft,Fb,Fl)|FR],(SwReqs,HWReqs,SerReqs, Binds,Type,Lat),[Seq|FRResult]):-
     functionReqs(FId,SwF,HWF,FSerReqs),
     \+(dontNeedPad((SwF,HWF,FSerReqs, Fb,Ft,Fl),(SwReqs,HWReqs,SerReqs, Binds,Type,Lat))),
-    subtract(SerReqs,FSerReqs,ServicesToPad),
-    dif(ServicesToPad, []),
+    serviceSubtract(SerReqs,FSerReqs,ServicesToPad),
+    dif(ServicesToPad, []),%TODO same service, different bind needs the padding
     subtract(Binds,Fb,DummyBinds),
-    createDummy(ServicesToPad,SwReqs,HWReqs,DummyBinds,Type, DummyF),
-    padToReqs(FR,(SwReqs,HWReqs,SerReqs, Binds,Type,Lat), FRResult).
+    createDummy(ServicesToPad,DummyBinds,Type, DummyF),
+    padToReqs(FR,(SwReqs,HWReqs,SerReqs, Binds,Type,Lat), FRResult),
+    padOrderedSeq(fpad(FId,Type,Fb,Lat,SwReqs,HWReqs,FSerReqs), DummyF, Seq).
 %ft that need padding but not dummy function for service call
 padToReqs([ft(FId,Ft,Fb,Fl)|FR],(SwReqs,HWReqs,SerReqs, Binds,Type,Lat),[fpad(FId,Type,Fb,Lat,SwReqs,HWReqs,FSerReqs)|FRResult]):-
     functionReqs(FId,SwF,HWF,FSerReqs),
     \+(dontNeedPad((SwF,HWF,FSerReqs, Fb,Ft,Fl),(SwReqs,HWReqs,SerReqs, Binds,Type,Lat))),
-    subtract(SerReqs,FSerReqs,[]),
+    serviceSubtract(SerReqs,FSerReqs,[]),
     padToReqs(FR,(SwReqs,HWReqs,SerReqs, Binds,Type,Lat), FRResult).
 padToReqs([innerIf(L,R)|FR],Reqs,[innerIf(LRes,RRes)|FRResult]):-
     padToReqs(L,Reqs,LRes),
@@ -318,13 +291,37 @@ padToReqs([par(List)|FR],Reqs,[par(ListRes)|FRResult]):-
     padToReqs(FR,Reqs,FRResult).
 
 %create a dummy function to make service call
-createDummy(SerReqs,_,_,Binds,T, fpad(fDummy, T,Binds,0,[],(0,0,0),SerReqs)).
+createDummy(SerReqs,Binds,T, fpad(FSid, T,Binds,0,[],(0,0,0),SerReqs)):-
+    gensym(fServicePad,FSid).
 
 %used to avoid to add reduntant padding to functions already with the common reqs
 dontNeedPad((SwF, HWReqs, SerF,Binds,T,L), (SwReqs,HWReqs,SerReqs, BindsReq,T,L)):-
     \+(set_dif(SwF,SwReqs)),
     \+(set_dif(SerF,SerReqs)),
     \+(set_dif(Binds,BindsReq)).
+
+%remove services of L2 form L1 (can't use list:subract because of latencies)
+serviceSubtract(L1, L2, Lres):-
+    findall((S,L), 
+           (member((S,L),L1),\+ member((S,_),L2)),
+            Lres).
+
+%assuming one service in SerReqs it create the seq using the alphabetical order of the services
+padOrderedSeq(fpad(FId,Type,Fb,Lat,SwReqs,HWReqs,FSerReqs),fpad(FSid, T,Binds,0,[],(0,0,0),SerReqs), seq(fpad(FId,Type,Fb,Lat,SwReqs,HWReqs,FSerReqs),fpad(FSid, T,Binds,0,[],(0,0,0),SerReqs))):-
+    alphaOrder(FSerReqs, SerReqs, FSerReqs).
+padOrderedSeq(fpad(FId,Type,Fb,Lat,SwReqs,HWReqs,FSerReqs),fpad(FSid, T,Binds,0,[],(0,0,0),SerReqs), seq(fpad(FSid, T,Binds,Lat,[],(0,0,0),SerReqs),fpad(FId,Type,Fb,0,SwReqs,HWReqs,FSerReqs))):-
+    alphaOrder(FSerReqs, SerReqs, SerReqs).
+
+
+alphaOrder([(A,La)],[(B,_)],[(A,La)]):-
+    sort([A,B], [A,B]).
+alphaOrder([(A,_)],[(B,Lb)],[(B,Lb)]):-
+    sort([A,B], [B,A]).
+alphaOrder(A,[],A):-
+    dif(A,[]).
+alphaOrder([],B,B):-
+    dif(B,[]).
+alphaOrder([],[],[]).
 
 
 %------------------------------------------

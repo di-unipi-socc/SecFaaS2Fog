@@ -7,8 +7,7 @@ typePropagation(_,InputTypes,[], [],InputTypes).
 %f case
 typePropagation(GuardType,InTypes, fun(F,FServices,Latency), ft(F,FType,FServices,Latency), OutTypes) :-
     functionBehaviour(F, InTypes, InteractionsTypes, OutTypes),
-	%union(InTypes,GuardType, InputTypes),
-    union([GuardType|InTypes], InteractionsTypes, TempTypes), union(TempTypes, OutTypes, AllTypes),
+	union([GuardType|InTypes], InteractionsTypes, TempTypes), union(TempTypes, OutTypes, AllTypes),
     highestType(AllTypes,FType).
 %sec case
 typePropagation(GuardType,InTypes, seq(S1,S2), seq(NewS1,NewS2), OutTypes) :-
