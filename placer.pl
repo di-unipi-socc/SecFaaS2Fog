@@ -1,14 +1,12 @@
 :- use_module(library(lists)).
-%:- consult('infrastructure').
-%:- consult('application').
+:- consult('infrastructure').
+:- consult('application').
 :- consult('wellformedness').
 :- consult('typing').
 :- consult('blobify').
 :- consult('padding').
 :- consult('mapping').
 :- consult('utils').
-:- consult('../examples/New/infrastructure').
-:- consult('../examples/New/application').
 :- consult('print').
 
 secfaas2fog(OrchId, Placement):-
