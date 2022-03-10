@@ -36,7 +36,7 @@ To try **SecFaaS2Fog** :
 
 ```prolog
 
-:- placeChain(OrchestrationId, Placement).
+:- secfaas2fog(OrchestrationId, Placement).
 
 ```
 
