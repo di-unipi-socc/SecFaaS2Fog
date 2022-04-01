@@ -5,7 +5,7 @@ placement(TypedBlobbedOrchestration, GeneratorId, Placement) :-
 
 %placement(_, [], [], _, Placement, Placement, []).
 %ft case
-placement(ft(F, FType,FServices,RequiredLatency), PreviousNodes, [N], OldPlacement, [on(F,N,HWReqs)|OldPlacement], fp(F, FType,FServicesBinding,N)):-
+placement(ft(F, FType,FServices,RequiredLatency), PreviousNodes, [N], OldPlacement, [on(F,N,HWReqs)|OldPlacement], fp(F, FType, SWReqs, HWReqs,FServicesBinding,N)):-
 	getNode(N, SWCaps, HWCaps),
 	checkPreviousNodesLat(PreviousNodes, N, RequiredLatency),
 	functionReqs(F, SWReqs, HWReqs, FServicesReqs),
@@ -14,7 +14,7 @@ placement(ft(F, FType,FServices,RequiredLatency), PreviousNodes, [N], OldPlaceme
     compatibleNodeType(FType,N),
     bindServices(N, FServices, FType, FServicesReqs, FServicesBinding).
 %fpad case
-placement(fpad(F,FType,FServices,RequiredLatency,SWReqs,HWReqs,FServicesReqs), PreviousNodes, [N], OldPlacement,[on(F,N,HWReqs)|OldPlacement], fp(F, FType,FServicesBinding,N)):-
+placement(fpad(F,FType,FServices,RequiredLatency,SWReqs,HWReqs,FServicesReqs), PreviousNodes, [N], OldPlacement,[on(F,N,HWReqs)|OldPlacement], fp(F, FType,SWReqs, HWReqs,FServicesBinding,N)):-
 	getNode(N, SWCaps, HWCaps),
 	checkPreviousNodesLat(PreviousNodes, N, RequiredLatency),
 	swReqsOK(SWReqs, SWCaps),
