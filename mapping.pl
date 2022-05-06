@@ -1,6 +1,6 @@
 %find suitable placements, assigning nodes to functions resolving the costraints
 placement(TypedBlobbedOrchestration, GeneratorId, Placement) :-
-	eventGenerator(GeneratorId, GeneratorNode),
+	eventGenerator(GeneratorId, _,GeneratorNode),
 	placement(TypedBlobbedOrchestration, [GeneratorNode], _,[], _, Placement).%[] is starting empty placement
 
 %placement(_, [], [], _, Placement, Placement, []).
@@ -57,7 +57,7 @@ placementPar([F|FList], PreviousNodes, NewLastNodesPar, OldPlacement, NewPlaceme
 	append(LastNodesF, LastNodesPar, NewLastNodesPar).
 
 getNode(N, SWCaps, HWCaps) :-
-	node(N, _, _, SWCaps, HWCaps).
+	node(N, _, _, _, SWCaps, HWCaps).
 
 compatibleNodeType(Ftype,N) :- nodeLabel(N, Ntype), compatible(Ftype, Ntype).
 compatibleServiceType(Ftype,S,Stype) :- serviceLabel(S,Stype,Slabel), compatible(Ftype, Slabel).

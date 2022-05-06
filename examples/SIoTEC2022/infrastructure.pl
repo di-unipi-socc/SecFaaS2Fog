@@ -1,22 +1,25 @@
 %% AR GATHERING INFRASTRUCTURE (info provided by node provider(s) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% node(nodeId, providerId, listOfSupportedSecurityProperties,listOFSoftwareCapabilities, listOFHWcapabilities (memory, cpu, mhz), Price)
+% node(nodeId, nodeType, providerId, listOfSupportedSecurityProperties,listOFSoftwareCapabilities, listOFHWcapabilities (memory, cpu, mhz), Price)
 %privateCitzen
-node(private1, privateCitizen1, [], [js], (1024,4,2500)).
-node(private2, privateCitizen2, [pubKeyE], [py3], (512,2,1500)).
+node(private1, privatenode, privateCitizen1, [], [js], (1024,4,2500)).
+node(private2, privatenode, privateCitizen2, [pubKeyE], [py3], (512,2,1500)).
 %telco
-node(ispRouter, telco, [pubKeyE, antiTamp], [js,py3],(3500, 16, 2000)).
-node(antenna1, telco, [pubKeyE, antiTamp], [js,py3],(2048, 3, 1500)).
-node(antenna2, telco, [pubKeyE], [py3,numPy],(2048, 4, 1500)).
+node(ispRouter, telconode,telco, [pubKeyE, antiTamp], [js,py3],(3500, 16, 2000)).
+node(antenna1, telconode, telco,[pubKeyE, antiTamp], [js,py3],(2048, 3, 1500)).
+node(antenna2, telconode, telco,[pubKeyE], [py3,numPy],(2048, 4, 1500)).
 %university
-node(labServer, university, [pubKeyE, antiTamp], [py3,numPy],(4096, 4, 2000)).
-node(officeServer, university, [], [py3],(1024, 2, 1000)).
-node(switch, university, [pubKeyE], [py3,js],(2048, 2, 2000)).
+node(labServer, uninode,university, [pubKeyE, antiTamp], [py3,numPy],(4096, 4, 2000)).
+node(officeServer, uninide, university, [], [py3],(1024, 2, 1000)).
+node(switch, uninode,university, [pubKeyE], [py3,js],(2048, 2, 2000)).
 %cloudProvider
-node(cloudNode, cloudProvider, [pubKeyE,antiTamp], [js,py3,numPy], (inf, inf, inf)).
+node(cloudNode, cloudnode,cloudProvider, [pubKeyE,antiTamp], [js,py3,numPy], (inf, inf, inf)).
 
 
-%eventGenerator(generatorId, eventType, SourceNodes)
-eventGenerator(userDevice, ispRouter).
+%eventGenerator(generatorId, eventList, SourceNodes)
+eventGenerator(userDevice1, [event01,event02],ispRouter).
+eventGenerator(userDevice2, [event02],antenna1).
+%trigger(generatorId,eventId)
+
 
 %service(serviceId, serviceProvider, serviceType, deployedNode)
 service(myUserDb, appOp, userDB, ispRouter).
@@ -25,6 +28,7 @@ service(openM, openS, maps, private1).
 %service(myShop, appOp, shops,switch).
 service(gp, pa, checkGp, ispRouter).
 service(rules, pa, checkRules, antenna1).
+service(bucket01, cloudProvider, bucket, antenna1).
 %service(publicGatherService, pub_amm, gatherService, antenna2).
 
 %link(node1, node2, latencyInMs)

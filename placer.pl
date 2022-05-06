@@ -9,17 +9,18 @@
 :- consult('utils').
 :- consult('print').
 
-secfaas2fog(OrchId, Placement):-
-	functionOrch(OrchId, (GeneratorId,TriggerTypes), Orchestration),
+secfaas2fog(GeneratorId,OrchId, Placement):-
+	functionOrch(OrchId, (_,TriggerTypes), Orchestration),
 	wellFormed(Orchestration,WFOrchestration),
     typePropagation(TriggerTypes,WFOrchestration,TypedOrchestration),
     padding(TypedOrchestration, PadOrchestration),
     placement(PadOrchestration, GeneratorId, Placement).
 
+%secfaas2fog(OrchId, Fstart, Placement):- Fstart lista per parallelo
 
 %%%%TEST predicates
-notDuplicate(OrchId):-
-	findall(P,secfaas2fog(OrchId, P), Ps),
+notDuplicate(G,OrchId):-
+	findall(P,secfaas2fog(G,OrchId, P), Ps),
 	list_to_set(Ps,S),
 	length(Ps, R1),
 	length(S, R2),
