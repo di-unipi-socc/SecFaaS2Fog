@@ -1,39 +1,68 @@
-%% APPLICATION (defined by operator) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%AR GATHERING APPLICATION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-% function(functionId, listOfSWReqs, HWReqs(memory, vCPU, Htz), timeout, listOfServiceReqs(serviceType, latency))
-functionReqs(f1, [java],(512, 1, 500),  [(amazonDB, 350), (posteAuth, 350)]).
-functionReqs(f2, [python], (256, 2, 550), []).
+% functionReqs(functionId, listOfSWReqs, HWReqs(memory, vCPU, Htz), listOfServiceReqs(serviceType, latency))
+functionReqs(fLogin, [js], (1024, 2, 500), [(userDB, 13)]).
+functionReqs(fCrop, [py3, numPy], (2048, 4, 1200), []).
+functionReqs(fGeo, [js], (256, 2, 400), [(maps, 30)]).
+functionReqs(fDCC, [js], (128, 2, 500), []).
+functionReqs(fCheckDCC, [js], (1600, 2, 500), [(checkGp, 50)]).
+functionReqs(fRules, [py3], (1800, 1, 400), [(checkRules, 20)]).
+functionReqs(fAR, [py3, numPy], (2048, 4, 1200), []).
 
-%functionBehaviour(functionId, listOfInputs, listOf(serviceReq, TypeParam), listOfOutputs)
-%f1
-functionBehaviour(f1, [X,Y,Z],[Z,top], [W]) :- maxType(X,Y,W).
-%f2
-functionBehaviour(f2, [X],[],[X]).
+%functionBehaviour(functionId, listOfInputs, listOfun(serviceReq, TypeParam), listOfOutputs)
+functionBehaviour(fLogin, [U, Sc, G],[U], [U,Sc, G]).
+functionBehaviour(fCrop,[_,Sc, G],[], [Sc,G]).
+functionBehaviour(fGeo, [Sc,G], [G], [Sc]).
+functionBehaviour(fDCC, [U,_,_], [], [U,U]).
+functionBehaviour(fCheckDCC, [_,U], [U], [low]).
+functionBehaviour(fRules, [_, U], [U], [low]).
+functionBehaviour(fAR, [U,Draw], [], [ScAr]):- maxType(U, Draw, ScAr).
 
-%functionChain(functionChainId, operatorId, triggeringEvent(eventSource, eventType, inputParameters,
-%               listOfFunctions(functionId(listOfServiceInstances)),
-%               listOfIntraFunctionLatencies).
-functionChain(
-  c1, appOp,(aws_bucket_5678, record_read, [top,medium,top]),
-  [(f1,[dbAws1, _]),(f2,[])],
-  [350]
+%functionOrch(functionOrchId, operatorId, triggeringEvent(eventSource, eventType, inputParameters), (latency from source, dest)
+%               listOfFunctions(functionId(listOfServiceInstances), latencyFromPrevious)
+
+functionOrch(
+  arOrch,(event1, [top,low,medium]), %trigger
+  seq(
+    fun(fLogin,[],25),
+    seq(
+      par([
+          if(
+            fun(fDCC,[],15),
+            fun(fCheckDCC,[],15),
+            fun(fRules,[],18)
+          ),
+          seq(
+            fun(fCrop,[],18),
+            fun(fGeo,[],12)
+          )
+      ]),
+      fun(fAR,[],18)
+    )
+  )
 ).
 
+
 % lattice of security types
-g_lattice_higherThan(top, high).
-g_lattice_higherThan(high, medium).
+g_lattice_higherThan(top, medium).
 g_lattice_higherThan(medium, low).
 
+% lattice security types color for print, if do not needed use 'latticeColor(_,default).'
+latticeColor(low,red).
+latticeColor(medium,orange).
+latticeColor(top,green).
 
 % node labeling
-assignNodeLabel(NodeId, top)    :- node(NodeId,_,SecCaps,_,_), member(antitampering, SecCaps), member(data_encryption, SecCaps).
-assignNodeLabel(NodeId, medium) :- node(NodeId,_,SecCaps,_,_), \+(member(antitampering, SecCaps)), member(data_encryption, SecCaps).
-assignNodeLabel(NodeId, low)    :- node(NodeId,_,SecCaps,_,_), \+(member(data_encryption, SecCaps)).
+nodeLabel(NodeId, top)    :- node(NodeId,_,_,SecCaps,_,_), member(antiTamp, SecCaps), member(pubKeyE, SecCaps).
+nodeLabel(NodeId, medium) :- node(NodeId,_,_,SecCaps,_,_), \+(member(antiTamp, SecCaps)), member(pubKeyE, SecCaps).
+nodeLabel(NodeId, low)    :- node(NodeId,_,_,SecCaps,_,_), \+(member(pubKeyE, SecCaps)).
 
 %service labeling
-assignServiceLabel(SId, amazonDB, top) :- service(SId, aws_EU, amazonDB, _).
-assignServiceLabel(SId, amazonDB, medium) :- service(SId, aws_US, amazonDB, _).
-assignServiceLabel(SId, amazonDB, low) :- service(SId, ServiceProvider, amazonDB, _), \+ (ServiceProvider = aws_EU, ServiceProvider = aws_US).
-assignServiceLabel(SId, posteAuth, top) :- service(SId, poste_ITA, posteAuth, _).
-assignServiceLabel(SId, posteAuth, low) :- service(SId, ServiceProvider, posteAuth, _), \+(ServiceProvider = poste_ITA).
+serviceLabel(SId, _, top) :- service(SId, appOp, _, _).
+serviceLabel(SId, _, top) :- service(SId, pa, _, _).
+serviceLabel(SId, maps, medium) :- service(SId, cloudProvider, maps, _).
+serviceLabel(SId, Type, low) :- 
+    service(SId, Provider, Type, _),
+    \+(Provider == appOp),
+    \+((Provider == cloudProvider, Type == maps)).

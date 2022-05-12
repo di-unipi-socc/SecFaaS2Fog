@@ -1,14 +1,17 @@
 :- use_module(library(lists)).
 :- consult('infrastructure').
 :- consult('application').
+%:- consult('./examples/SIoTEC2022/infrastructure').
+%:- consult('./examples/SIoTEC2022/application').
 :- consult('wellformedness').
 :- consult('typing').
-:- consult('blobify').
+%:- consult('replacement').
 :- consult('padding').
 :- consult('mapping').
 :- consult('utils').
 :- consult('print').
 
+%in: id generator, orchestratationid out: placement
 secfaas2fog(GeneratorId,OrchId, Placement):-
 	functionOrch(OrchId, (_,TriggerTypes), Orchestration),
 	wellFormed(Orchestration,WFOrchestration),
@@ -16,7 +19,28 @@ secfaas2fog(GeneratorId,OrchId, Placement):-
     padding(TypedOrchestration, PadOrchestration),
     placement(PadOrchestration, GeneratorId, Placement).
 
+%placement without padding
+noPad(GeneratorId,OrchId, Placement):-
+	functionOrch(OrchId, (_,TriggerTypes), Orchestration),
+	wellFormed(Orchestration,WFOrchestration),
+    typePropagation(TriggerTypes,WFOrchestration,TypedOrchestration),
+    placement(TypedOrchestration, GeneratorId, Placement).
+
+%execute a placement once and give also the exeucution time to find it
+placementTime(GeneratorId,OrchId, Placement, ExecTime):-
+	get_time(StartTime),
+	once(secfaas2fog(GeneratorId,OrchId, Placement)),
+	get_time(StopTime),
+	ExecTime is StopTime - StartTime.
+
 %secfaas2fog(OrchId, Fstart, Placement):- Fstart lista per parallelo
+
+%secfaas2fog(Fstart, GeneratorId,OrchId, Placement):-
+%	functionOrch(OrchId, (_,TriggerTypes), Orchestration),
+%	wellFormed(Orchestration,WFOrchestration),
+%    typePropagation(TriggerTypes,WFOrchestration,TypedOrchestration),
+%    padding(TypedOrchestration, PadOrchestration),
+%    replacement(Fstart,PadOrchestration, GeneratorId, Placement).
 
 %%%%TEST predicates
 notDuplicate(G,OrchId):-
@@ -31,11 +55,11 @@ testTyping(OrchId, TypedOrchestration):-
 	wellFormed(Orchestration,WFOrchestration),
 	typePropagation(TriggerTypes,WFOrchestration,TypedOrchestration).
 
-testTypingBlob(OrchId, BlobedOrchestration):-
-	functionOrch(OrchId, (_,TriggerTypes), Orchestration),
-	wellFormed(Orchestration,WFOrchestration),
-	typePropagation(TriggerTypes,WFOrchestration,TypedOrchestration),
-	blobify(TypedOrchestration, BlobedOrchestration).
+%testTypingBlob(OrchId, BlobedOrchestration):-
+%	functionOrch(OrchId, (_,TriggerTypes), Orchestration),
+%	wellFormed(Orchestration,WFOrchestration),
+%	typePropagation(TriggerTypes,WFOrchestration,TypedOrchestration),
+%	blobify(TypedOrchestration, BlobedOrchestration).
 
 testPadFormat(OrchId, PadOrchestration):-
     functionOrch(OrchId, (_,TriggerTypes), Orchestration),

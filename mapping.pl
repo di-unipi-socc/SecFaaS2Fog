@@ -1,25 +1,24 @@
 %find suitable placements, assigning nodes to functions resolving the costraints
-placement(TypedBlobbedOrchestration, GeneratorId, Placement) :-
+placement(Orchestration, GeneratorId, Placement) :-
 	eventGenerator(GeneratorId, _,GeneratorNode),
-	placement(TypedBlobbedOrchestration, [GeneratorNode], _,[], _, Placement).%[] is starting empty placement
+	placement(Orchestration, [GeneratorNode], _,[], _, Placement).%[] is starting empty placement
 
-%placement(_, [], [], _, Placement, Placement, []).
 %ft case
 placement(ft(F, FType,FServices,RequiredLatency), PreviousNodes, [N], OldPlacement, [on(F,N,HWReqs)|OldPlacement], fp(F, FType, SWReqs, HWReqs,FServicesBinding,N)):-
-	getNode(N, SWCaps, HWCaps),
 	checkPreviousNodesLat(PreviousNodes, N, RequiredLatency),
+	compatibleNodeType(FType,N),
+	getNode(N, SWCaps, HWCaps),
 	functionReqs(F, SWReqs, HWReqs, FServicesReqs),
     swReqsOK(SWReqs, SWCaps),
     hwReqsOK(HWReqs, HWCaps, N, OldPlacement),
-    compatibleNodeType(FType,N),
     bindServices(N, FServices, FType, FServicesReqs, FServicesBinding).
 %fpad case
 placement(fpad(F,FType,FServices,RequiredLatency,SWReqs,HWReqs,FServicesReqs), PreviousNodes, [N], OldPlacement,[on(F,N,HWReqs)|OldPlacement], fp(F, FType,SWReqs, HWReqs,FServicesBinding,N)):-
-	getNode(N, SWCaps, HWCaps),
 	checkPreviousNodesLat(PreviousNodes, N, RequiredLatency),
+	compatibleNodeType(FType,N),
+	getNode(N, SWCaps, HWCaps),
 	swReqsOK(SWReqs, SWCaps),
     hwReqsOK(HWReqs, HWCaps, N, OldPlacement),
-    compatibleNodeType(FType,N),
     bindServices(N, FServices, FType, FServicesReqs, FServicesBinding).
 %seq case
 placement(seq(S1,S2), PreviousNodes, LastNodesS2, OldPlacement, PlacementS2, seq(P1,P2)):-
@@ -50,11 +49,11 @@ placement(blob(FList,FType,RequiredLatency, (SWReqs, HWReqs, _)), PreviousNodes,
 placement(par(Par), PreviousNodes, NewLastNodesPar, OldPlacement, NewPlacement, par(Placement)):-
 	placementPar(Par, PreviousNodes, NewLastNodesPar, OldPlacement, NewPlacement, Placement).
 
-placementPar([], _, [], Placement, Placement, []).
 placementPar([F|FList], PreviousNodes, NewLastNodesPar, OldPlacement, NewPlacement, [Pf|PFList]):-
 	placement(F,PreviousNodes, LastNodesF,OldPlacement, Placement, Pf),
 	placementPar(FList,PreviousNodes, LastNodesPar,Placement, NewPlacement, PFList),
 	append(LastNodesF, LastNodesPar, NewLastNodesPar).
+placementPar([], _, [], Placement, Placement, []).
 
 getNode(N, SWCaps, HWCaps) :-
 	node(N, _, _, _, SWCaps, HWCaps).
@@ -64,20 +63,20 @@ compatibleServiceType(Ftype,S,Stype) :- serviceLabel(S,Stype,Slabel), compatible
 compatible(T,T).
 compatible(T1,T2) :- dif(T1,T2), lattice_higherThan(T2, T1).
 
-checkPreviousNodesLat([],_,_).
+
 checkPreviousNodesLat([PrevNode|PrevNodes], ThisNode, RequiredLatency):-
 	link(PrevNode, ThisNode, FeaturedLatency), FeaturedLatency =< RequiredLatency,
 	checkPreviousNodesLat(PrevNodes, ThisNode, RequiredLatency).
+checkPreviousNodesLat([],_,_).
 
-bindServices(_, _, _, [], []).
 bindServices(Node, InstanceBindings, FType, [(SType,RequiredLatency)|ReqList], [(SType,S,ServiceNode)|Binding]):-
 	getService(S, SType, ServiceNode, InstanceBindings),
+	link(Node, ServiceNode, FeaturedLatency), FeaturedLatency =< RequiredLatency,
 	compatibleServiceType(FType, S, SType),
 	compatibleNodeType(FType, ServiceNode),
-	link(Node, ServiceNode, FeaturedLatency), FeaturedLatency =< RequiredLatency,
 	getNode(ServiceNode, _,_),
 	bindServices(Node, InstanceBindings, FType, ReqList, Binding).
-
+bindServices(_, _, _, [], []).
 
 %getService(S, ServiceType, ServiceNode, []) :-	service(S, _, ServiceType, ServiceNode).
 getService(S, ServiceType, ServiceNode, InstanceBindings) :-
@@ -87,8 +86,8 @@ getService(S2, ServiceType, ServiceNode, InstanceBindings) :-
 	\+((member(S1, InstanceBindings), service(S1, _, ServiceType, _))),
 	service(S2, _, ServiceType, ServiceNode).
 
-bindServicesBlob(_,[],_,_,[]).
-bindServicesBlob([(F,Bindings)|FList], N, FType, [(F,FServicesBinding,N)|PlacedFunctions]):-
-	functionReqs(F, _, _, FServicesReqs),
-    bindServices(N, Bindings, FType, FServicesReqs, FServicesBinding),
-	bindServicesBlob(FList, N, FType, PlacedFunctions).
+%bindServicesBlob(_,[],_,_,[]).
+%bindServicesBlob([(F,Bindings)|FList], N, FType, [(F,FServicesBinding,N)|PlacedFunctions]):-
+%	functionReqs(F, _, _, FServicesReqs),
+%    bindServices(N, Bindings, FType, FServicesReqs, FServicesBinding),
+%	bindServicesBlob(FList, N, FType, PlacedFunctions).
