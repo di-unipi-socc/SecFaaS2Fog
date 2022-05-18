@@ -3,7 +3,6 @@
 :- consult('application').
 :- consult('wellformedness').
 :- consult('typing').
-:- consult('replacement').
 :- consult('padding').
 :- consult('mapping').
 :- consult('utils').
