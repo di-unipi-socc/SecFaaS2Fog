@@ -36,21 +36,17 @@ To try **SecFaaS2Fog** :
 
 ```prolog
 
-:- secfaas2fog(OrchestrationId, Placement).
+:- secfaas2fog(GeneratorId, OrchestrationId, Placement).
 
 ```
 
-The output are the elegible placements for the application described in `application.pl` onto the infrastructure described in `infrastructure.pl` . Each Placement is composed by the function identifier, the node selected for the placement and the list of resolved bindings with services (triples of service type, service instance and node hosting the service).
+The output are the elegible placements for the application described in `application.pl` onto the infrastructure described in `infrastructure.pl` . Each Placement is composed by the orchestrated functions composed by function identifier, the node selected for the placement and the list of resolved bindings with services (triples of service type, service instance and node hosting the service).
 
 E.g. of single placement
 
 ```prolog
 
-Placement= [on(fLogin,labServer,[(database, myUserDB, centralRouter)]),
-
-on(fNav,switch,[(mapService, openMaps, officeServer)]),
-
-on(fAR,centralRouter,[])]
+Placement= seq(seq(fp(fCrop, top, [py3, numPy],  (2048, 4, 1200), [], labServer), fp(fGeo, medium, [js],  (256, 2, 400), [(maps, cMaps, cloudNode)], ispRouter)), fp(fAR, low, [py3, numPy],  (2048, 4, 1200), [], antenna2)).
 
 ```
 
@@ -62,3 +58,31 @@ on(fAR,centralRouter,[])]
 
 ```
 The output is a [Graphviz](https://graphviz.org/)script to be inserted in a diagraph.
+
+5. To find eligible placement without the padding of conditional branches, inside swipl run the query
+
+```prolog
+
+:- noPad(GeneratorId, OrchestrationId, Placement).
+
+```
+
+6. To test the execution time of *SecFaaS2Fog*, inside swipl run the query
+
+```prolog
+
+:- placementTime(GeneratorId, OrchestrationId, Placement, Time).
+
+```
+
+The result is a single placement and the execution time in seconds.
+
+7. To execute the partial placement of an orchestration, , inside swipl run the query
+
+```prolog
+
+:- replacement(StartingFunction, StartingNode, OrchestrationId, Placement).
+
+```
+
+The output is the placement of the orchestration starting from a specific function, ignoring all the previous functions.
