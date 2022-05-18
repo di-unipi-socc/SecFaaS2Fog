@@ -5,7 +5,7 @@
 :- consult('typing').
 :- consult('padding').
 :- consult('mapping').
-:- consult('replacement')
+:- consult('replacement').
 :- consult('utils').
 :- consult('print').
 
