@@ -31,14 +31,6 @@ placementTime(GeneratorId,OrchId, Placement, ExecTime):-
 	get_time(StopTime),
 	ExecTime is StopTime - StartTime.
 
-%secfaas2fog(OrchId, Fstart, Placement):- Fstart lista per parallelo
-
-replace(Fstart, GeneratorId,OrchId, Placement):-
-	functionOrch(OrchId, (_,TriggerTypes), Orchestration),
-	wellFormed(Orchestration,WFOrchestration),
-   typePropagation(TriggerTypes,WFOrchestration,TypedOrchestration),
-   padding(TypedOrchestration, PadOrchestration),
-   replacement(Fstart,PadOrchestration, GeneratorId, Placement).
 
 %%%%TEST predicates
 notDuplicate(G,OrchId):-
