@@ -3,9 +3,9 @@
 :- consult('application').
 :- consult('wellformedness').
 :- consult('typing').
-:- consult('replacement').
 :- consult('padding').
 :- consult('mapping').
+:- consult('replacement')
 :- consult('utils').
 :- consult('print').
 
@@ -30,7 +30,6 @@ placementTime(GeneratorId,OrchId, Placement, ExecTime):-
 	(once(secfaas2fog(GeneratorId,OrchId, Placement);true)),
 	get_time(StopTime),
 	ExecTime is StopTime - StartTime.
-
 
 %%%%TEST predicates
 notDuplicate(G,OrchId):-
