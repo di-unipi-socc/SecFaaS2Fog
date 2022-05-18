@@ -1,11 +1,12 @@
 %replacment starting from Fstart
-replacement(Fstart,GeneratorId,OrchId, Placement):-
+replacement(Fstart,StartingNode,OrchId, Placement):-
 	functionOrch(OrchId, (_,TriggerTypes), Orchestration),
 	wellFormed(Orchestration,WFOrchestration),
     typePropagation(TriggerTypes,WFOrchestration,TypedOrchestration),
     padding(TypedOrchestration, PadOrchestration),
-	replace(Fstart,PadOrchestration, Output),
-	placement(Output,GeneratorId,Placement).
+	replace(Fstart,PadOrchestration, CuttedOrchestration),
+	compatibleList(CList),
+	placement(CList, CuttedOrchestration, [StartingNode], _,[], _, Placement).
 
 %cut the orchestration until Fstart
 replace(Fstart,ft(Fstart, FType,FServices,RequiredLatency),ft(Fstart, FType,FServices,RequiredLatency)).

@@ -1,6 +1,8 @@
 :- use_module(library(lists)).
-:- consult('infrastructure').
-:- consult('application').
+%:- consult('infrastructure').
+%:- consult('application').
+:- consult('/examples/SIoTEC2022/application').
+:- consult('/examples/SIoTEC2022/infrastructure').
 :- consult('wellformedness').
 :- consult('typing').
 :- consult('padding').
