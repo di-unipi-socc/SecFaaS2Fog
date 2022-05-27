@@ -70,3 +70,27 @@ union_sort(L1,L2,L3,Lres):-
 	append(L1,L2,Ltemp),
 	append(L3,Ltemp,Ltemp2),
 	sort(Ltemp2, Lres).
+
+%%%%%%%mapping utils
+
+getNode(N, SWCaps, HWCaps) :-
+	node(N, _, _, _, SWCaps, HWCaps).
+
+checkPreviousNodesLat([PrevNode|PrevNodes], ThisNode, RequiredLatency):-
+	link(PrevNode, ThisNode, FeaturedLatency), FeaturedLatency =< RequiredLatency,
+	checkPreviousNodesLat(PrevNodes, ThisNode, RequiredLatency).
+checkPreviousNodesLat([],_,_).
+
+canHost(SWReqs, (RAMReq,VCPUsReq,CPUReq), SWCaps, (RAMCap,VCPUsCap,CPUCap)):-
+	subset(SWReqs, SWCaps),
+	RAMCap >= RAMReq,
+	VCPUsCap >= VCPUsReq,
+	CPUCap >= CPUReq.
+
+%getService(S, ServiceType, ServiceNode, []) :-	service(S, _, ServiceType, ServiceNode).
+getService(S, ServiceType, ServiceNode, InstanceBindings) :-
+	member(S, InstanceBindings), service(S, _, ServiceType, ServiceNode).
+
+getService(S2, ServiceType, ServiceNode, InstanceBindings) :-
+	\+((member(S1, InstanceBindings), service(S1, _, ServiceType, _))),
+	service(S2, _, ServiceType, ServiceNode).

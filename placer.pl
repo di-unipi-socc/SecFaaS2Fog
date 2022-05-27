@@ -1,12 +1,11 @@
 :- use_module(library(lists)).
-%:- consult('infrastructure').
-%:- consult('application').
-:- consult('/examples/SIoTEC2022/application').
-:- consult('/examples/SIoTEC2022/infrastructure').
+:- consult('infrastructure').
+:- consult('application').
 :- consult('wellformedness').
 :- consult('typing').
 :- consult('padding').
 :- consult('mapping').
+:- consult('optimised').
 :- consult('replacement').
 :- consult('utils').
 :- consult('print').
@@ -27,11 +26,14 @@ noPad(GeneratorId,OrchId, Placement):-
     placement(TypedOrchestration, GeneratorId, Placement).
 
 %execute a placement once and give also the exeucution time to find it
-placementTime(GeneratorId,OrchId, Placement, ExecTime):-
+secfaas2fogOpt(MaxExecTime,GeneratorId,OrchId, Placement):-
 	get_time(StartTime),
-	(once(secfaas2fog(GeneratorId,OrchId, Placement);true)),
-	get_time(StopTime),
-	ExecTime is StopTime - StartTime.
+	once(((functionOrch(OrchId, (_,TriggerTypes), Orchestration),
+			wellFormed(Orchestration,WFOrchestration),
+    		typePropagation(TriggerTypes,WFOrchestration,TypedOrchestration),
+    		padding(TypedOrchestration, PadOrchestration),
+    		placementOpt((StartTime, MaxExecTime),PadOrchestration, GeneratorId, Placement)
+		);false)).
 
 %%%%TEST predicates
 notDuplicate(G,OrchId):-
