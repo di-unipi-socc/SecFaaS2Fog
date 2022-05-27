@@ -1,11 +1,9 @@
 
-  
-
 <p><img  align="left"  width="100">  <h1>SecFaaS2Fog</h1></p>
 
   
 
-SecFaaS2Fog is a declarative prototype to place orchestrated FaaS applications onto a Fog infrastructure satisfying QoS, hardware and software requirements of serverless functions and employing information-flow security techniques to prevent leaks of critical information. During the placement, SecFaaS2Fog can resolve bindings of service with functions, considering the service type and latency requierements. To avoid leaking the value of an if statement guard, SecFaaS2Fog pads the requirements of the functions of two branches to make them indistinguishable from an external attacker.
+SecFaaS2Fog is a declarative prototype to place orchestrated FaaS applications onto a Fog infrastructure satisfying QoS, hardware and software requirements of serverless functions and employing information-flow security techniques to prevent leaks of critical information. During the placement, SecFaaS2Fog can resolve bindings of service with functions, considering the service type and latency requirements. To avoid leaking the value of an if statement guard, SecFaaS2Fog pads the requirements of the functions of two branches to make them indistinguishable from an external attacker.
 
 <br></br>
 
@@ -67,22 +65,25 @@ The output is a [Graphviz](https://graphviz.org/)script to be inserted in a diag
 
 ```
 
-6. To test the execution time of *SecFaaS2Fog*, inside swipl run the query
-
-```prolog
-
-:- placementTime(GeneratorId, OrchestrationId, Placement, Time).
-
-```
 
 The result is a single placement and the execution time in seconds.
 
-7. To execute the partial placement of an orchestration, , inside swipl run the query
+6. To execute the partial placement of an orchestration, inside swipl run the query
 
 ```prolog
 
-:- replacement(StartingFunction, StartingNode, OrchestrationId, Placement).
+:- replacement(MaxExecTime, StartingFunction, StartingNodes, OrchestrationId, Placement).
 
 ```
 
 The output is the placement of the orchestration starting from a specific function, ignoring all the previous functions.
+
+7. To execute the optimised placement of an orchestration, inside swipl run the query
+
+```prolog
+
+:- secfaas2fogOpt(MaxExecTime, GeneratorId, OrchestrationId, Placement).
+
+```
+
+The output is a single placement of the orchestration (if exists) or false in case of the execution time in seconds exceeds MaxExecTime.

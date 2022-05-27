@@ -1,4 +1,6 @@
 :- use_module(library(lists)).
+%:- consult('/examples/SIoTEC2022/application').
+%:- consult('/examples/SIoTEC2022/infrastructure').
 :- consult('infrastructure').
 :- consult('application').
 :- consult('wellformedness').
@@ -25,7 +27,7 @@ noPad(GeneratorId,OrchId, Placement):-
     typePropagation(TriggerTypes,WFOrchestration,TypedOrchestration),
     placement(TypedOrchestration, GeneratorId, Placement).
 
-%execute a placement once and give also the exeucution time to find it
+%execute a placement in optimised version with a time bound in seconds
 secfaas2fogOpt(MaxExecTime,GeneratorId,OrchId, Placement):-
 	get_time(StartTime),
 	once(((functionOrch(OrchId, (_,TriggerTypes), Orchestration),
