@@ -1,4 +1,4 @@
-%replacment starting from Fstart
+%replacement starting from Fstart
 replacement(MaxTime, Fstart,StartingNodes,OrchId, Placement):-
 	functionOrch(OrchId, (_,TriggerTypes), Orchestration),
 	wellFormed(Orchestration,WFOrchestration),
@@ -8,6 +8,17 @@ replacement(MaxTime, Fstart,StartingNodes,OrchId, Placement):-
 	compatibleList(CList),
 	get_time(Start),
 	placementOpt((Start,MaxTime),CList, CuttedOrchestration, StartingNodes, _,[], _, Placement).
+
+%replacement starting from Fstart without padding
+replacementNoPad(MaxTime, Fstart,StartingNodes,OrchId, Placement):-
+	functionOrch(OrchId, (_,TriggerTypes), Orchestration),
+	wellFormed(Orchestration,WFOrchestration),
+    typePropagation(TriggerTypes,WFOrchestration,TypedOrchestration),
+	replace(Fstart,TypedOrchestration, CuttedOrchestration),
+	compatibleList(CList),
+	get_time(Start),
+	placementOpt((Start,MaxTime),CList, CuttedOrchestration, StartingNodes, _,[], _, Placement).
+
 
 %cut the orchestration until Fstart
 replace(Fstart,ft(Fstart, FType,FServices,RequiredLatency),ft(Fstart, FType,FServices,RequiredLatency)).

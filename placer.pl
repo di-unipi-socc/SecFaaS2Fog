@@ -36,6 +36,15 @@ secfaas2fogOpt(MaxExecTime,GeneratorId,OrchId, Placement):-
     		padding(TypedOrchestration, PadOrchestration),
     		placementOpt((StartTime, MaxExecTime),PadOrchestration, GeneratorId, Placement)
 		);false)).
+%optimised placement without padding
+secfaas2fogOpt(MaxExecTime,GeneratorId,OrchId, Placement):-
+	get_time(StartTime),
+	once(((functionOrch(OrchId, (_,TriggerTypes), Orchestration),
+			wellFormed(Orchestration,WFOrchestration),
+    		typePropagation(TriggerTypes,WFOrchestration,TypedOrchestration),
+    		placementOpt((StartTime, MaxExecTime),TypedOrchestration, GeneratorId, Placement)
+		);false)).
+
 
 %%%%TEST predicates
 notDuplicate(G,OrchId):-
