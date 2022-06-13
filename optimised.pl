@@ -1,8 +1,14 @@
-%find suitable placements, assigning nodes to functions resolving the costraints
+%finds one placement from a generator with time constrain
 placementOpt(Times,Orchestration, GeneratorId, Placement) :-
 	eventGenerator(GeneratorId, _,GeneratorNode),
 	once(compatibleList(CList)),
-	placementOpt(Times,CList, Orchestration, [GeneratorNode], _,[], _, Placement).%[] is starting empty placement
+	once(placementOpt(Times,CList, Orchestration, [GeneratorNode], _,[], _, Placement);false).
+
+%finds one placement starting from a list of nodes with time constrain
+placementOpt(Times,Orchestration, StartingNodes, Placement) :-
+	once((member(N,StartingNodes), node(N,_,_,_,_,_))),
+	once(compatibleList(CList)),
+	once(placementOpt(Times,CList, Orchestration, StartingNodes, _,[], _, Placement);false).
 
 %ft case
 placementOpt(Times,CList, ft(F, FType,FServices,RequiredLatency), PreviousNodes, [N], OldPlacement, [on(F,N,HWReqs)|OldPlacement], fp(F, FType, SWReqs, HWReqs,FServicesBinding,N)):-
