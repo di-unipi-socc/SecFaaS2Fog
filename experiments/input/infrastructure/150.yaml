@@ -1,0 +1,204 @@
+number_of_nodes:
+  cloud: 7
+  fog: 48
+  edge: 95
+
+event_generators:
+  generator_base_name : device
+  generators:
+    min_quantity: 6
+    max_quantity: 18
+  events_per_generator:
+    min_quantity: 4
+    max_quantity: 4
+  on_edge_probability: 0.75
+  events:
+    - event1
+    - event2
+    - event3
+    - event4
+    - event5
+    - event6
+    - event7
+
+nodes:
+  cloud:
+    - probability: 1
+      provider: cloudProvider
+      security_caps:
+        - pubKeyE
+        - antiTamp
+      software_caps:
+        - js
+        - py3
+        - numPy
+      hardware_caps:
+        memory: inf
+        v_cpu: inf
+        mhz: inf
+  fog:
+    - probability: 0.05
+      provider: university
+      security_caps:
+        - pubKeyE
+      software_caps:
+        - js
+        - py3
+      hardware_caps:
+        memory: 2048
+        v_cpu: 2
+        mhz: 2000
+    - probability: 0.05
+      provider: university
+      security_caps: []
+      software_caps:
+        - py3
+      hardware_caps:
+        memory: 1024
+        v_cpu: 2
+        mhz: 1000
+    - probability: 0.2
+      provider: university
+      security_caps:
+        - pubKeyE
+        - antiTamp
+      software_caps:
+        - py3
+        - numPy
+      hardware_caps:
+        memory: 4096
+        v_cpu: 4
+        mhz: 2000
+    - probability: 0.2
+      provider: telco
+      security_caps:
+        - pubKeyE
+        - antiTamp
+      software_caps:
+        - py3
+        - numPy
+      hardware_caps:
+        memory: 2048
+        v_cpu: 4
+        mhz: 1500
+    - probability: 0.2
+      provider: telco
+      security_caps:
+        - pubKeyE
+        - antiTamp
+      software_caps:
+        - js
+        - py3
+      hardware_caps:
+        memory: 2048
+        v_cpu: 4
+        mhz: 1500
+    - probability: 0.3
+      provider: telco
+      security_caps:
+        - pubKeyE
+        - antiTamp
+      software_caps:
+        - js
+        - py3
+      hardware_caps:
+        memory: 3500
+        v_cpu: 16
+        mhz: 2000
+  edge:
+    - probability: 0.4
+      provider: privateCitizen1
+      security_caps: []
+      software_caps:
+        - js
+      hardware_caps:
+        memory: 1024
+        v_cpu: 4
+        mhz: 2500
+    - probability: 0.2
+      provider: privateCitizen2
+      security_caps:
+        - pubKeyE
+      software_caps:
+        - py3
+      hardware_caps:
+        memory: 512
+        v_cpu: 2
+        mhz: 1500
+    - probability: 0.4
+      provider: privateCitizen3
+      security_caps:
+        - pubKeyE
+      software_caps:
+        - js
+        - py3
+      hardware_caps:
+        memory: 1024
+        v_cpu: 4
+        mhz: 3000
+
+links:
+  cloud:
+    self:
+      lower: 30
+      upper: 55
+    fog:
+      link_probability: 0.7
+      lower: 30
+      upper: 42
+    edge:
+      link_probability: 0.1
+      lower: 35
+      upper: 45
+  fog:
+    self:
+      lower: 5
+      upper: 27
+    edge:
+      link_probability: 0.95
+      lower: 5
+      upper: 21
+  edge:
+    self:
+      lower: 2
+      upper: 15
+
+services:
+  cloud:
+    - base_name: cMaps
+      provider: cloudProvider
+      type: maps
+      min_quantity : 2
+      max_quantity: 3
+    - base_name: bucket
+      provider: cloudProvider
+      type: bucket
+      min_quantity : 2
+      max_quantity: 3
+  fog:
+    - base_name: myUserDb
+      provider: appOp
+      type: userDB
+      min_quantity : 2
+      max_quantity: 4
+    - base_name: myDatabase
+      provider: appOp
+      type: database
+      min_quantity : 2
+      max_quantity: 4
+    - base_name: gp
+      provider: pa
+      type: checkGp
+      min_quantity : 3
+      max_quantity: 5
+    - base_name: rules
+      provider: pa
+      type: checkRules
+      min_quantity : 3
+      max_quantity: 4
+  edge:
+    - base_name: openM
+      provider: openS
+      type: maps
+      min_quantity : 3
+      max_quantity: 7

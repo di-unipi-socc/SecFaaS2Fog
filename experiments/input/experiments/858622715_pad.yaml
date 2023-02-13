@@ -1,0 +1,57 @@
+simulator:
+  epochs : 200
+  function_duration : 1
+  seed : 858622715
+  use_padding : true
+  max_placement_time : 1
+
+events:
+  generator_trigger_probability: 0.2
+  event_min_probability: 0.3
+  event_max_probability: 1
+
+infrastructure:
+  type: physical # allowed values are 'logical' and 'physical'
+  is_dynamic: false # nodes and links can crash iff the infrastructure is dynamic
+  crash_probability :
+    cloud : 0.001
+    fog : 0.05
+    edge : 0.1
+  resurrection_probability :
+    cloud : 0.5
+    fog : 0.4
+    edge : 0.9
+  link_crash_probability : 0.05
+  link_resurrection_probability : 0.3
+  energy:
+    cloud:
+      threshold: 0.5
+      low: 0.2
+      high: 0.4
+    fog:
+      threshold: 0.5
+      low: 0.2
+      high: 0.4
+    edge:
+      threshold: 0.5
+      low: 0.2
+      high: 0.4
+
+applications:
+  "Siotec2022" :
+    filename : siotec.pl # application's Prolog definition
+    orchestration_id: arOrch # orchestration id
+    trigger_event: event1 # trigger event
+    guards :
+      fDCC : 0.7
+  "Media Processing" :
+    filename : media_processing.pl
+    orchestration_id: mediaOrch
+    trigger_event: event6
+    guards :
+      fPayAppr : 0.4
+  "Stock Market" :
+    filename : stock_market.pl
+    orchestration_id: stockOrch
+    trigger_event: event2
+    guards : {}
